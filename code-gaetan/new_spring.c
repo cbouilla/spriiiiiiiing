@@ -8,6 +8,7 @@
 //#include "spring.h"
 #include "vector.c"
 #include "vector.h"
+#include "poly_eval.h"
 //#include "rand_generated_arrays.c"
 
 #define CCV(x) {x, x, x, x, x, x, x, x}
@@ -34,52 +35,16 @@ const v16 NULL_VECT=CCV(0);
 #define arranged_mask(x)  (bits_shift_r(half_bits_w(x), 7)^(weak_bits8(half_bits_w(x))))
 #define ROUNDING(x)   (arranged_mask(ROUNDING_MASK(x)))
 
+
 // multiply polynomial a and b. The result is given by res.
 void MultiplyPolyEval128(v16 a[16], v16 b[16], v16 res[16]) {
-  v16 A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, B0, B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15;
-
-  A0=a[0];  A1=a[1];  A2=a[2];  A3=a[3];  A4=a[4];  A5=a[5];  A6=a[6];  A7=a[7]; A8=a[8];  A9=a[9];  A10=a[10];  A11=a[11];  A12=a[12];  A13=a[13];  A14=a[14];  A15=a[15];
- 
-B0=b[0];  B1=b[1];  B2=b[2];  B3=b[3];  B4=b[4];  B5=b[5];  B6=b[6];  B7=b[7];  B8=b[8];  B9=b[9];  B10=b[10];  B11=b[11];  B12=b[12];  B13=b[13];  B14=b[14];  B15=b[15];
-
- X0 = v16_mul(A0,B0);
- X1 = v16_mul(A1,B1);
- X2 = v16_mul(A2,B2);
- X3 = v16_mul(A3,B3);
- X4 = v16_mul(A4,B4);
- X5 = v16_mul(A5,B5);
- X6 = v16_mul(A6,B6);
- X7 = v16_mul(A7,B7);
- X8 = v16_mul(A8,B8);
- X9 = v16_mul(A9,B9);
- X10 = v16_mul(A10,B10);
- X11 = v16_mul(A11,B11);
- X12 = v16_mul(A12,B12);
- X13 = v16_mul(A13,B13);
- X14 = v16_mul(A14,B14);
- X15 = v16_mul(A15,B15);
-
-#define X(i) X##i
-
-DO_REDUCE_FULL_S(0);
-DO_REDUCE_FULL_S(1);
-DO_REDUCE_FULL_S(2);
-DO_REDUCE_FULL_S(3);
-DO_REDUCE_FULL_S(4);
-DO_REDUCE_FULL_S(5);
-DO_REDUCE_FULL_S(6);
-DO_REDUCE_FULL_S(7);
-DO_REDUCE_FULL_S(8);
-DO_REDUCE_FULL_S(9);
-DO_REDUCE_FULL_S(10);
-DO_REDUCE_FULL_S(11);
-DO_REDUCE_FULL_S(12);
-DO_REDUCE_FULL_S(13);
-DO_REDUCE_FULL_S(14);
-DO_REDUCE_FULL_S(15);
-
- res[0]=X0;  res[1]=X1;  res[2]=X2;  res[3]=X3;  res[4]=X4;  res[5]=X5;  res[6]=X6;  res[7]=X7;  res[8]=X8;  res[9]=X9;  res[10]=X10;  res[11]=X11;  res[12]=X12;  res[13]=X13;  res[14]=X14;  res[15]=X15;
-
+  int i;
+  v16 X;
+  for (i=0; i<16; i++){
+    X=v16_mul(a[i], b[i]);
+    REDUCE_FULL_S(X);
+    res[i]=X;
+  }
 }   
 
 
@@ -97,6 +62,39 @@ uint64_t OutputFillIn(v16 a, int* i, uint64_t Output){
 
   return Output;
 }
+
+void UpdateCounterMode(uint64_t* x, v16 Eval2[16], const uint64_t Gray){
+  uint64_t ptx = (*x);
+  int flip=0;
+  uint64_t mask, inv, i;
+
+  if(Gray&1){
+    while(((ptx>>flip)&1)){
+      flip++;
+    }
+    flip++;
+  }
+ 
+ mask = (1 << (flip));
+ ptx ^= mask;
+
+ inv=(ptx >> flip)&1;
+
+ if(inv) {
+   for(i=0; i<16; i++){
+     Eval2[i]=Sinv_Eval[flip][i];
+     Eval2[i]=REDUCE_FULL_S(Eval2[i]);
+   }
+ }
+ else {
+   for(i=0; i<16; i++){
+     Eval2[i]=S_Eval[flip][i];
+     Eval2[i]=REDUCE_FULL_S(Eval2[i]);
+   }
+ }
+
+ *x=ptx;
+  }
 
 
 int main(){
@@ -147,6 +145,16 @@ int main(){
   Output=OutputFillIn(X, &i, Output);
   printf("Output : %x \n", (unsigned) Output);
   printf("%d\n", i);
+
+  /* Test UpdateCounterMode */
+  uint64_t x=0x11;
+  v16 Y[16];
+
+  UpdateCounterMode(&x, Y, 5);
+
+  for(i=0; i<8; i++){
+    printf("%d ----- %d\n", S2inv[0][i], Y[0][i]);
+  }
 
   return 0;
 }
