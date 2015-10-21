@@ -38,12 +38,8 @@ const v16 NULL_VECT=CCV(0);
 
 // multiply polynomial a and b. The result is given by res.
 void MultiplyPolyEval128(v16 a[16], v16 b[16], v16 res[16]) {
-  int i;
-  v16 X;
-  for (i=0; i<16; i++){
-    X=v16_mul(a[i], b[i]);
-    REDUCE_FULL_S(X);
-    res[i]=X;
+  for (int i=0; i<16; i++){
+    res[i] = REDUCE_FULL_S(v16_mul(a[i], b[i]));
   }
 }   
 
@@ -53,27 +49,31 @@ void ConvertEvalToCoefficients(v16 poly[16]){
   fft128(poly);
 
   for(i=0; i<16; i++){
-    poly[i]=REDUCE_FULL_S(poly[i]*omegaPowers[i]);
+    poly[i]=REDUCE_FULL_S(poly[i] * omegaPowers[i]);  // gcc transforme-t-il ça en v16_mul ?
   }
 
 }
 
-uint64_t OutputFillIn(v16 a, int *i, uint64_t Output){
+/**
+ * @param a : le vecteur à traiter
+ * @param i : la position du prochain octet à stocker dans Output
+ * @param Ouutput : le flux de sortie du PRNG
+ * @return position (éventuellement modifiée) du prochain octet à stocker dans Output
+ */
+int OutputFillIn(v16 a, int i, char *Output){
   
   //Perform Rejection-sampling.
-  if(REJECTION_MASK(a)) return Output;
-
-  uint64_t tmp;
-
-  //Round vector.
-  tmp=ROUNDING(a);
-  tmp=tmp<<((*i)*8);
-  Output ^= tmp;
-  (*i)++;
-
-  return Output;
+  if(REJECTION_MASK(a)) {
+    return i;
+  }
+  Output[i] = ROUNDING(a);
+  return i + 1;
 }
 
+/**
+ * @param x : la chaine de bits représentant la position actuelle du "gray counter"
+ * @param Gray : le numéro de la valeur générée
+ */
 void UpdateCounterMode(uint64_t* x, v16 Eval2[16], const uint64_t Gray){
   uint64_t ptx = (*x);
   int flip=0;
@@ -86,6 +86,8 @@ void UpdateCounterMode(uint64_t* x, v16 Eval2[16], const uint64_t Gray){
     flip++;
   }
  
+assert (flip == __builtin_ctz(ptx));
+
  mask = (1 << (flip));
  ptx ^= mask;
 
@@ -108,30 +110,38 @@ void UpdateCounterMode(uint64_t* x, v16 Eval2[16], const uint64_t Gray){
   }
 
 
-uint64_t GrayCounterMode(int n_iterations){
-  v16 Eval1[16], Eval2[16], Prod[16];
-  uint64_t x=0, Gray_counter=0, Output=0;
+/** 
+ * Effectue n_iterations du mode compteur en produisant le flux
+ * @param n_bytes    nombre d'octets de flux à générer
+ * @return           un pointeur vers une zone de mémoire contenant n_bytes octets de flux
+ */
+char * GrayCounterMode(int n_bytes){
+  v16 Eval1[16], 
+      Eval2[16], 
+      Prod[16];    // a * prod(s_i^x_i)
+  uint64_t x=0, Gray_counter=0;
   int i, Output_pt=0, iter;
 
-  for(i=0; i<16; i++){
-   Prod[i]=A[i];
+  Output = malloc(n_bytes);
+
+  for(int i=0; i<16; i++){
+    Prod[i] = A[i];
   }
 
-  for(iter=0; iter < n_iterations; iter++){
-
-    for(i=0; i<16; i++){
-      Eval1[i]=Prod[i];
+  while(Output_pt < n_bytes) {
+    for(int i=0; i<16; i++){
+      Eval1[i] = Prod[i];
     }
 
     ConvertEvalToCoefficients(Prod);
 
-    for(i=0; i<16; i++){
-      Output = OutputFillIn(Prod[i], &Output_pt, Output);
+    for(int i=0; i<16; i++) {
+      Output_pt = OutputFillIn(Prod[i], Output_pt, Output);
     }
 
     UpdateCounterMode(&x, Eval2, Gray_counter);
     Gray_counter++;
-    MultiplyPolyEval128(Eval1, Eval2, Prod);
+    MultiplyPolyEval128(Eval1, Eval2, Prod); // prod' = Prod(en fait Eval1) * Eval2
   }
   
   return Output;
@@ -177,53 +187,15 @@ int main(){
   printf("mask(A0)= %x,\n mask(A1)= %x\n round=%x\n",m1, m2, round);
 
   /* Test function OutputFillIn */
-  uint64_t Output=0;
-  i=0;
-
-  Output=OutputFillIn(X, &i, Output);
-  printf("Output : %" PRIx64" \n",  Output);
-  Output=OutputFillIn(A0, &i, Output);
-  printf("Output : %" PRIx64" \n",  Output);
-  Output=OutputFillIn(A1, &i, Output);
-  printf("Output : %" PRIx64" \n",  Output);
-  Output=OutputFillIn(X, &i, Output);
-  printf("Output : %" PRIx64" \n",  Output);
-  Output=OutputFillIn(A0, &i, Output);
-  printf("Output : %" PRIx64" \n",  Output);
-  Output=OutputFillIn(X, &i, Output);
-  printf("Output : %" PRIx64" \n",  Output);
-
-
-  printf("%d\n", i);
-
-  
-
-  /* Test UpdateCounterMode */
-  uint64_t x=0x11;
-  v16 Y[16];
-
-  UpdateCounterMode(&x, Y, 5);
-
-  for(i=0; i<8; i++){
-    printf("%d ----- %d\n", S2inv[0][i], Y[0][i]);
-  }
-
-  /*Test ConvertEvalToCoefficients*/
-
-  ConvertEvalToCoefficients(Y);
-
- for(i=0; i<8; i++){
-    printf("%d \n", Y[0][i]);
-  }
-
-
  /* Test GrayCounterMode */
 
- Output=0;
- Output=GrayCounterMode(2);
+ char * Output=GrayCounterMode(30);
 
- printf("Output: %" PRIx64 "\n", Output);
-
+  printf("Output: ");
+  for(int i=0; i<30; i++) {
+    printf("%02x ", Output[i]);
+  }
+  printf("\n");
 
   return 0;
 }
