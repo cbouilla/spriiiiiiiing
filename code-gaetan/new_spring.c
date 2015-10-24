@@ -184,45 +184,22 @@ uint64_t GrayCounterMode(int n_bytes){
 
 
 
+// méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
+void init_secrets() {
+  srand(42);
+
+  for(int i=0; i < 64; i++) {
+    for(int j=0; j < 16; j++) {
+      S_Eval[i][j] = rand_v16();
+      Sinv_Eval[i][j] = rand_v16(); // OK, Sinv n'est pas vraiment l'inverse de S. Et alors ?
+    }
+    A[i] = rand_v16();
+  }
+}
+
+
 int main(){
-
-  /* Test function MultiplyPolyEval128 */
-
-  /* v16 a[16], b[16], c[16]; */
-
- /*  v16 A0=CCV(0), A1=CCV(1), A2=CCV(2), A3=CCV(3), A4=CCV(4), A5=CCV(5), A6=CCV(6), A7=CCV(7), A8=CCV(8), A9=CCV(9), A10=CCV(10), A11=CCV(11), A12=CCV(12), A13=CCV(13), A14=CCV(14), A15=CCV(15), B0=CCV(1), B1=CCV(1), B2=CCV(2), B3=CCV(4), B4=CCV(8), B5=CCV(16), B6=CCV(32), B7=CCV(64), B8=CCV(128), B9=CCV(256), B10=CCV(255), B11=CCV(253), B12=CCV(249), B13=CCV(241), B14=CCV(225), B15=CCV(193),  C4; */
-
- /*  int i; */
-
- /*  A0[0]=1; A1[1]=2; A2[2]=3; A3[3]=4; A4[4]=5; A5[5]=6; A6[6]=7; A7[7]=8;  */
- /*  B0[7]=7; B2[6]=6; B4[5]=5; B6[4]=4; B8[3]=3; B10[2]=2; B12[1]=1; B14[0]=0; */
-
- /*  a[0]=A0; a[1]=A1; a[2]=A2; a[3]=A3; a[4]=A4; a[5]=A5; a[6]=A6; a[7]=A7; a[8]=A8; a[9]=A9; a[10]=A10; a[11]=A11; a[12]=A12; a[13]=A13; a[14]=A14; a[15]=A15; */
-
- /*  b[0]=B0; b[1]=B1; b[2]=B2; b[3]=B3; b[4]=B4; b[5]=B5; b[6]=B6; b[7]=B7; b[8]=B8; b[9]=B9; b[10]=B10; b[11]=B11; b[12]=B12; b[13]=B13; b[14]=B14; b[15]=B15; */
-
-  
- /*  MultiplyPolyEval128(a,b,c); */
-
- /* C4=c[4]; */
-
- /*  for(i=0; i<8; i++){ */
- /*    printf("%d x %d ----> %d\n", A4[i], B4[i], C4[i]); */
- /*  } */
-
-  /* Test macros REJECTION_MASK and ROUNDING */
-  /* v16 X; */
-  /* unsigned int m1, m2, round; */
-
-  /* X[0]=-1; X[1]=1; X[2]=-1; X[3]=1; X[4]=-1; X[5]=1; X[6]=-1; X[7]=1; */
-
-  /* m1=REJECTION_MASK(A0); m2=REJECTION_MASK(A1); */
-  /* round=ROUNDING(X); */
-
-  /* printf("mask(A0)= %x,\n mask(A1)= %x\n round=%x\n",m1, m2, round); */
-
-  /* Test function OutputFillIn */
- /* Test GrayCounterMode */
+  init_secrets();
 
 #ifdef rdtsc
 	uint64_t tsc = rdtsc();
