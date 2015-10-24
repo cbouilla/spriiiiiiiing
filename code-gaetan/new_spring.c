@@ -5,17 +5,16 @@
 #include <assert.h>
 #include <inttypes.h>
 
-//#include "spring.h"
 #include "vector.c"
 #include "vector.h"
 #include "poly_eval.h"
-//#include "rand_generated_arrays.c"
+
 
 #define CCV(x) {x, x, x, x, x, x, x, x}
 
-const v16 NULL_VECT=CCV(0);
+const v16 NULL_VECT = CCV(0);
 
-#define N_BYTES 70
+#define N_BYTES 80000000
 
 #define v16_mask(x)       (v16_movemask(x))
 #define v16_nulcoef(x)    (v16_cmp_eq(x,NULL_VECT))
@@ -34,30 +33,32 @@ const v16 NULL_VECT=CCV(0);
 #define bits_shift_r(x,i) (x>>i)
 #define bits_shift_l(x,i) (x<<i)
 #define arranged_mask(x)  (bits_shift_r(half_bits_w(x), 7)^(weak_bits8(half_bits_w(x))))
-#define ROUNDING(x)   (arranged_mask(ROUNDING_MASK(x)))
+#define ROUNDING(x)       (arranged_mask(ROUNDING_MASK(x)))
 
 
 
 
-// multiply polynomial a and b. The result is given by res.
-void MultiplyPolyEval128(v16 a[16], v16 b[16], v16 res[16]) {
+// res <--- a * b   (polynômes sous formes évalués)
+void MultiplyPolyEval128(const v16 a[16], const v16 b[16], v16 res[16]) {
   for (int i=0; i<16; i++){
     res[i] = REDUCE_FULL_S(v16_mul(a[i], b[i]));
   }
 }   
 
-void ConvertEvalToCoefficients(const v16 Eval[16], v16 Coef[16]){
-
-  for(int i=0; i<16; i++) Coef[i]=Eval[i];
+// Coef <--- coefficients du polynôme représenté sous forme évalué dans Eval
+void ConvertEvalToCoefficients(const v16 Eval[16], v16 Coef[16]) {
+  for(int i=0; i<16; i++) {
+    Coef[i] = Eval[i];
+  }
 
   fft128(Coef);
 
+  // indispensable
   v16* CoefPtr = (v16*)Coef;
 
   for(int i=0; i<16; i++){
-    CoefPtr[i]=REDUCE_FULL_S(CoefPtr[i] * omegaPowers[i]);  // gcc transforme-t-il ça en v16_mul ?
+    CoefPtr[i] = REDUCE_FULL_S(v16_mul(CoefPtr[i], omegaPowers[i]));
   }
-
 }
 
 /**
@@ -105,84 +106,67 @@ int XOROutputUpdate(v16 a, int i, uint64_t *Output){
  */
 uint64_t UpdateCounterMode(uint64_t x, v16 Prod[16], const uint64_t Gray){
   int flip;
-  uint64_t mask, inv, i;
+  uint64_t mask, inv;
 
-flip = 1 + __builtin_ctz(Gray+1);
+  // index du bit qui doit changer
+  flip = 1 + __builtin_ctz(Gray+1);
 
- 
- /* while((((Gray+1)>>flip)&1)==0){ */
- /*      flip++; */
- /*    } */
- /*    flip++; */
+  mask = (1 << (flip));
+  x ^= mask;
 
- /* if (flip != flip2) { */
- /*    printf("ca ne colle pas : gray=%" PRIx64 " / %d vs %d\n", Gray, flip, 1 + __builtin_ctz(Gray+1)); */
- /*    } */
-  
- 
+  // nouvelle valeur du bit qui a changé
+  inv = x & mask;
 
+  // jeu de s_i à utiliser
+  const v16 *s = inv ? Sinv_Eval[flip] : S_Eval[flip];
 
- mask = (1 << (flip));
- x ^= mask;
-
- inv=(x >> flip)&1;
-
- if(inv) {
-   for(i=0; i<16; i++){
-     Prod[i]=Prod[i]*Sinv_Eval[flip][i];
-     Prod[i]=REDUCE_FULL_S(Prod[i]);
-   }
- }
- else {
-   for(i=0; i<16; i++){
-     Prod[i]=Prod[i]*S_Eval[flip][i];
-     Prod[i]=REDUCE_FULL_S(Prod[i]);
-   }
- }
-
- return x;
+  for(int i=0; i<16; i++) {
+    Prod[i] = REDUCE_FULL_S(v16_mul(Prod[i], s[i]));
   }
+  return x;
+}
 
-
-/** 
- * Effectue n_iterations du mode compteur en produisant le flux
- * @param n_bytes    nombre d'octets de flux à générer
- * @return           un pointeur vers une zone de mémoire contenant n_bytes octets de flux
- */
-uint64_t GrayCounterMode(int n_bytes){
-  v16 Poly[16], 
-    //Eval2[16], 
-      Prod[16];    // a * prod(s_i^x_i)
+// renvoie le XOR de n_bytes octets de flux
+unsigned char GrayCounterMode(int n_bytes){
+  v16 Poly[16], Prod[16];
   uint64_t x=0, Gray_counter=0;
-  int Output_pt=0, count=0;
+  int count = 0;
 
-  uint64_t FinalOutput=0;
+  unsigned char FinalOutput = 0;
 
-  //char * Output = malloc(n_bytes);
 
+  // Setup
   for(int i=0; i<16; i++){
     Prod[i] = A[i];
   }
 
   while(count < n_bytes) {
- 
 
-    ConvertEvalToCoefficients(Prod, Poly); //On retrouve les coefficients du polynome à partir de ses évaluations.
-
+    // Extraction du flux
+    ConvertEvalToCoefficients(Prod, Poly);
     for(int i=0; i<16; i++) {
-      Output_pt = XOROutputUpdate(Poly[i], Output_pt, &FinalOutput);
+      if (REJECTION_MASK(Poly[i]) == 0) { //Perform Rejection-sampling.
+        FinalOutput ^= ROUNDING(Poly[i]);
+        count++;
+      }
     }
-    count += Output_pt; 
-   
-    x=UpdateCounterMode(x, Prod, Gray_counter);
+
+    // mise à jour de l'état interne
+    x = UpdateCounterMode(x, Prod, Gray_counter);
     Gray_counter++;
-    //MultiplyPolyEval128(Eval1, Eval2, Prod); // prod' = Prod(en fait Eval1) * Eval2
   }
-  
+
   return FinalOutput;
 }
 
 
+v16 rand_v16() {
+  v16 x;
+  for(int j=0; j < 16; j++) {
+    x[j] = rand();
+  }
+  return REDUCE_FULL_S(x);
+}
 
 // méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
 void init_secrets() {
@@ -208,7 +192,7 @@ int main(){
 	begin = clock();
 #endif
 
- uint64_t Output=GrayCounterMode(N_BYTES);
+  unsigned char Output = GrayCounterMode(N_BYTES);
 
 #ifdef rdtsc
 	tsc = rdtsc() - tsc;
@@ -216,20 +200,14 @@ int main(){
 	end = clock();
 #endif
 
-
- printf("Output: %" PRIx64 "\n", Output);
-  /* for(int i=0; i<30; i++) { */
-  /*   printf("%02x ", (unsigned char) Output[i]); */
-  /* } */
-
+ printf("Output: %d\n", Output);
+  
 #ifdef rdtsc
 	printf ("%f c/B\n", 8.*tsc/(1.*N_BYTES*8));
 #else
 	double dt = (double) (end - begin) / CLOCKS_PER_SEC;
 	printf ("%f MB/s (time = %f)\n", ((float)N_BYTES*8/8000000dt, dt);
 #endif
-
-  printf("\n");
 
   return 0;
 }
