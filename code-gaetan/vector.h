@@ -13,14 +13,15 @@ typedef __v8hi v16;
 
 #define CV(x) {{x, x, x, x, x, x, x, x}}
 
-#define v16_and _mm_and_si128
-
+#define v16_and      _mm_and_si128
+#define v16_movemask _mm_movemask_epi8
 #define v16_add      _mm_add_epi16
 #define v16_sub      _mm_sub_epi16
 #define v16_mul      _mm_mullo_epi16
 #define v16_shift_l  _mm_slli_epi16
 #define v16_shift_r  _mm_srai_epi16
 #define v16_cmp      _mm_cmpgt_epi16
+#define v16_cmp_eq   _mm_cmpeq_epi16
 
 #define v16_interleavel   _mm_unpacklo_epi16
 #define v16_interleaveh   _mm_unpackhi_epi16

@@ -17,8 +17,7 @@ const v16 NULL_VECT=CCV(0);
 
 #define N_BYTES 70
 
-#define v16_cmp_eq      __builtin_ia32_pcmpeqw128
-#define v16_mask(x)     __builtin_ia32_pmovmskb128((v8) x)
+#define v16_mask(x)       (v16_movemask(x))
 #define v16_nulcoef(x)    (v16_cmp_eq(x,NULL_VECT))
 #define v16_pcoef(x)      (v16_cmp(x,NULL_VECT))
 
