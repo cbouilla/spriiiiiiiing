@@ -15,7 +15,7 @@
 
 const v16 NULL_VECT=CCV(0);
 
-#define N_BYTES 70
+#define N_BYTES 69
 
 #define v16_cmp_eq      __builtin_ia32_pcmpeqw128
 #define v16_mask(x)     __builtin_ia32_pmovmskb128((v8) x)
@@ -106,9 +106,9 @@ int XOROutputUpdate(v16 a, int i, uint64_t *Output){
  */
 uint64_t UpdateCounterMode(uint64_t x, v16 Prod[16], const uint64_t Gray){
   int flip;
-  uint64_t mask, inv, i;
+  uint64_t mask, inv;
 
-flip = 1 + __builtin_ctz(Gray+1);
+flip =  __builtin_ctz(Gray);
 
  
  /* while((((Gray+1)>>flip)&1)==0){ */
@@ -128,18 +128,24 @@ flip = 1 + __builtin_ctz(Gray+1);
 
  inv=(x >> flip)&1;
 
- if(inv) {
-   for(i=0; i<16; i++){
-     Prod[i]=Prod[i]*Sinv_Eval[flip][i];
-     Prod[i]=REDUCE_FULL_S(Prod[i]);
-   }
+ for(int i=0; i<16; i++){
+   Prod[i]=Prod[i]*S_Eval[inv][flip][i];
+   Prod[i]=REDUCE_FULL_S(Prod[i]);
  }
- else {
-   for(i=0; i<16; i++){
-     Prod[i]=Prod[i]*S_Eval[flip][i];
-     Prod[i]=REDUCE_FULL_S(Prod[i]);
-   }
- }
+
+ /* if(inv) { */
+ /*   for(i=0; i<16; i++){ */
+ /*     Prod[i]=Prod[i]*Sinv_Eval[flip][i]; */
+ /*     Prod[i]=REDUCE_FULL_S(Prod[i]); */
+ /*   } */
+ /* } */
+ /* else { */
+ /*   for(i=0; i<16; i++){ */
+ /*     Prod[i]=Prod[i]*S_Eval[flip][i]; */
+ /*     Prod[i]=REDUCE_FULL_S(Prod[i]); */
+ /*   } */
+ /* } */
+
 
  return x;
   }
@@ -175,8 +181,8 @@ uint64_t GrayCounterMode(int n_bytes){
     }
     count += Output_pt; 
    
-    x=UpdateCounterMode(x, Prod, Gray_counter);
     Gray_counter++;
+    x=UpdateCounterMode(x, Prod, Gray_counter);
     //MultiplyPolyEval128(Eval1, Eval2, Prod); // prod' = Prod(en fait Eval1) * Eval2
   }
   
