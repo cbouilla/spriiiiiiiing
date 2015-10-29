@@ -7,12 +7,33 @@
 
 #include "vector.c"
 #include "vector.h"
-#include "poly_eval.h"
+
+v16 A[16];
+v16 S_Eval[64][2][16];
+//v16 Sinv_Eval[64][16];
+
+// a table of the powers of omega. 
+const v16 omegaPowers[16] = {
+    {1, -94, 98, 40, 95, 65, 58, -55},
+    {30, 7, 113, -85, 23, -106, -59, -108},
+    {-128, -47, 49, 20, -81, -96, 29, 101},
+    {15, -125, -72, 86, -117, -53, 99, -54},
+    {-64, 105, -104, 10, 88, -48, -114, -78},
+    {-121, 66, -36, 43, 70, 102, -79, -27},
+    {-32, -76, -52, 5, 44, -24, -57, -39},
+    {68, 33, -18, -107, 35, 51, 89, 115},
+    {-16, -38, -26, -126, 22, -12, 100, 109},
+    {34, -112, -9, 75, -111, -103, -84, -71},
+    {-8, -19, -13, -63, 11, -6, 50, -74},
+    {17, -56, 124, -91, 73, 77, -42, 93},
+    {-4, 119, 122, 97, -123, -3, 25, -37},
+    {-120, -28, 62, 83, -92, -90, -21, -82},
+    {-2, -69, 61, -80, 67, 127, -116, 110},
+    {-60, -14, 31, -87, -46, -45, 118, -41}
+};
 
 
-#define CCV(x) {x, x, x, x, x, x, x, x}
-
-const v16 NULL_VECT = CCV(0);
+const v16 NULL_VECT = {0, 0, 0, 0, 0, 0, 0, 0};
 
 
 #define N_BYTES 320000000
@@ -65,44 +86,6 @@ void ConvertEvalToCoefficients(const v16 Eval[16], v16 Coef[16]) {
   }
 }
 
-/**
- * @param a : le vecteur à traiter
- * @param i : la position du prochain octet à stocker dans Output
- * @param Ouutput : le flux de sortie du PRNG
- * @return position (éventuellement modifiée) du prochain octet à stocker dans Output
- */
-int OutputFillIn(v16 a, int i, char *Output){
-  
-  //Perform Rejection-sampling.
-  if(REJECTION_MASK(a)) {
-    return i;
-  }
-  Output[i] = ROUNDING(a);
-  return i + 1;
-}
-
-
-/**
- * @param a : vecteur à traiter
- * @param i : Position du prochain octet, mod 8.
- * @param Output : Sortie du PRNG Xorée avec elle-meme.
- * @return position du prochain octet à stocker mod 8.
- */
-int XOROutputUpdate(v16 a, int i, uint64_t *Output){
-  assert (i<8);
-
-    if(REJECTION_MASK(a)) {
-      return i;
-    }
-
-  uint64_t tmp;
-  tmp=ROUNDING(a);
-  tmp=tmp<<(8*i);
-  (*Output) ^= tmp;
-  i++;
-
-  return (i&0x7);
-}
 
 /**
  * @param x : la chaine de bits représentant la position actuelle du "gray counter"
@@ -142,7 +125,7 @@ unsigned char GrayCounterMode(int n_bytes){
 
 
   // Setup
-  for(int i=0; i<16; i++){
+  for(int i=0; i < 16; i++){
     Prod[i] = A[i];
   }
 
@@ -150,15 +133,14 @@ unsigned char GrayCounterMode(int n_bytes){
 
     // Extraction du flux
     ConvertEvalToCoefficients(Prod, Poly);
-    for(int i=0; i<16; i++) {
+    for(int i = 0; i < 16; i++) {
       if (REJECTION_MASK(Poly[i]) == 0) { //Perform Rejection-sampling.
         FinalOutput ^= ROUNDING(Poly[i]);
         count++;
       }
     }
-    //count += Output_pt; 
     Gray_counter++;
-    x=UpdateCounterMode(x, Prod, Gray_counter);
+    x = UpdateCounterMode(x, Prod, Gray_counter);
     //MultiplyPolyEval128(Eval1, Eval2, Prod); // prod' = Prod(en fait Eval1) * Eval2
   }
 
@@ -170,7 +152,7 @@ v16 rand_v16() {
   v16 x;
   for(int j=0; j < 16; j++) {
     do {
-    x[j] = rand();
+      x[j] = rand();
     } while(x[j]==0);
   }
   return REDUCE_FULL_S(x);
@@ -183,8 +165,8 @@ void init_secrets() {
   for(int i=0; i < 64; i++) {
     for(int k=0; k<2; k++){
       for(int j=0; j < 16; j++) {
-	S_Eval[i][k][j] = rand_v16();
-	//Sinv_Eval[i][j] = rand_v16(); // OK, Sinv n'est pas vraiment l'inverse de S. Et alors ?
+        S_Eval[i][k][j] = rand_v16();
+        // Sinv_Eval[i][j] = rand_v16(); // OK, Sinv n'est pas vraiment l'inverse de S. Et alors ?
       }
     }
   }
@@ -197,29 +179,14 @@ void init_secrets() {
 int main(){
   init_secrets();
 
-#ifdef rdtsc
-	uint64_t tsc = rdtsc();
-#else
-	clock_t begin, end;
-	begin = clock();
-#endif
+  uint64_t tsc = rdtsc();
 
   unsigned char Output = GrayCounterMode(N_BYTES);
-
-#ifdef rdtsc
-	tsc = rdtsc() - tsc;
-#else
-	end = clock();
-#endif
-
- printf("Output: %d\n", Output);
   
-#ifdef rdtsc
-	printf ("%f c/B\n", 8.*tsc/(1.*N_BYTES*8));
-#else
-	double dt = (double) (end - begin) / CLOCKS_PER_SEC;
-	printf ("%f MB/s (time = %f)\n", ((float)N_BYTES*8/8000000dt, dt);
-#endif
+  tsc = rdtsc() - tsc;
+
+  printf("Output: %d\n", Output);
+  printf ("%f c/B\n", 8.*tsc/(1.*N_BYTES*8));
 
   return 0;
 }
