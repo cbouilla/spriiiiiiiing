@@ -12,8 +12,14 @@
 #include <immintrin.h>
 
 typedef __v8hi v16;
-typedef __v16hi v32;
 
+#ifdef __AVX2INTRIN_H
+  typedef __v16hi v32;
+  #define v32_cst(x) {x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x}
+  #define v32_cmp_gt   _mm256_cmpgt_epi16
+  #define v32_shift_l  _mm256_slli_epi16
+  #define v32_shift_r  _mm256_srai_epi16
+#endif
 
 #define CV(x) {{x, x, x, x, x, x, x, x}}
 
@@ -32,11 +38,6 @@ typedef __v16hi v32;
 
 
 #define CV(x) {{x, x, x, x, x, x, x, x}}
-#define v32_cst(x) {x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x}
-
-#define v32_cmp_gt   _mm256_cmpgt_epi16
-#define v32_shift_l  _mm256_slli_epi16
-#define v32_shift_r  _mm256_srai_epi16
 
 
 /* Unions to convert vector types to scalar types
