@@ -274,6 +274,7 @@ static const v32 FFT128_Twiddle[8] =  {
   { 1,   49,   88,  -57,   34,  124,  -92,  118,  128,  104,  -44, -100,  -17,  -62,   46,  -59}};
 
 // the whole she-bang. FFT-128 with omega=42 !
+// input in [-128,383] (i.e. "REDUCEd" but not "EXTRA_REDUCEd")
 void fft128(void *a) {
   v32* const A = a;
   register v32 X0, X1, X2, X3, X4, X5, X6, X7;
@@ -293,7 +294,7 @@ void fft128(void *a) {
   DIF_BUTTERFLY(X2, X6, 4);
   DIF_BUTTERFLY(X3, X7, 6);
   X5 = REDUCE(X5);
-  X6 = REDUCE(X6);
+  //X6 = REDUCE(X6);
   X7 = REDUCE(X7);
 
   DIF_BUTTERFLY(X0, X2, 0);
@@ -306,7 +307,7 @@ void fft128(void *a) {
   DIF_BUTTERFLY(X4, X5, 0);
   DIF_BUTTERFLY(X6, X7, 0);
   
-  X0 = REDUCE_FULL(X0); // FIXME later
+  // X0 = REDUCE_FULL(X0); 
   X1 = REDUCE_FULL(X1);
   X2 = REDUCE_FULL(X2);
   X3 = REDUCE_FULL(X3);
@@ -326,14 +327,14 @@ void fft128(void *a) {
   X7 *= FFT128_Twiddle[7];
 
   // qu'est-ce qui est strictement nécessaire là-dedans ?
-  X0 = REDUCE_FULL(X0);
-  X1 = REDUCE_FULL(X1);
-  X2 = REDUCE_FULL(X2);
-  X3 = REDUCE_FULL(X3);
-  X4 = REDUCE_FULL(X4);
-  X5 = REDUCE_FULL(X5);
-  X6 = REDUCE_FULL(X6);
-  X7 = REDUCE_FULL(X7);
+  X0 = REDUCE(X0);
+  X1 = REDUCE(X1);
+  X2 = REDUCE(X2);
+  X3 = REDUCE(X3);
+  X4 = REDUCE(X4);
+  X5 = REDUCE(X5);
+  X6 = REDUCE(X6);
+  X7 = REDUCE(X7);
 
   // STEP 3 : (nearly complete) transpose
   INTERLEAVE(X0, X1);
@@ -375,12 +376,14 @@ void fft128(void *a) {
   DIT_BUTTERFLY(X4, X6, 2);
   DIT_BUTTERFLY(X1, X3, 4);
   DIT_BUTTERFLY(X5, X7, 6);
-  X4 = REDUCE(X4);
+  X2 = REDUCE(X2);
   X5 = REDUCE(X5);
   X1 = REDUCE(X1);
   X3 = REDUCE(X3);
   X5 = REDUCE(X5);
-  X7 = REDUCE(X7);
+  X7 = REDUCE_FULL(X7);
+
+// TODO : réfléchir à combiner BUTTERFLY et REDUCE
 
   DIT_TROUBLESOME_BUTTERFLY(X0, 0);
   DIT_TROUBLESOME_BUTTERFLY(X4, 1);
