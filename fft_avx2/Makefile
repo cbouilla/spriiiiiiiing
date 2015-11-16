@@ -1,9 +1,12 @@
-CFLAGS = -Wall -Wextra -g -O3 -std=c99 -mtune=native
+CFLAGS = -Wall -Wextra -O3 -std=c99 -mtune=native
 CFLAGS += -funroll-loops
 OLD = -msse4
 NEW = -mavx2 -mtune=native -march=native
 
-all: test_fft32 fft_bench32 fft_bench
+all: spring test_fft32 fft_bench32 fft_bench
+
+spring: new_spring.c vector.h vector32.c
+	$(CC) $(NEW) $(CFLAGS) $< -o $@
 
 fft_bench: fft_bench.c vector.h vector.c
 	$(CC) $(OLD) $(CFLAGS) $< -o $@

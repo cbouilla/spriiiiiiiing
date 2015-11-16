@@ -1,3 +1,5 @@
 *.dSYM
 *.o
 *~
+fft_avx2/fft_bench
+fft_avx2/fft_bench32

@@ -294,7 +294,6 @@ void fft128(void *a) {
   DIF_BUTTERFLY(X2, X6, 4);
   DIF_BUTTERFLY(X3, X7, 6);
   X5 = REDUCE(X5);
-  //X6 = REDUCE(X6);
   X7 = REDUCE(X7);
 
   DIF_BUTTERFLY(X0, X2, 0);
