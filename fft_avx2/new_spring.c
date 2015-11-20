@@ -113,14 +113,9 @@ uint64_t GrayCounterMode(int n_bytes){
 }
 
 
-v32 rand_v32() {
-  v32 x;
-  for(int j=0; j < 16; j++) {
-    do {
-      x[j] = rand();
-    } while(x[j] == 0);
-  }
-  return REDUCE_FULL(x);
+int16_t nice_rand() {
+  int x = rand() % 257;  
+  return (x > 128) ? x - 257 : x;
 }
 
 // méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
@@ -129,13 +124,17 @@ void init_secrets() {
 
   for(int i=0; i < 64; i++) {
     for(int k=0; k<2; k++){
-      for(int j=0; j < 8; j++) {
-        S_Eval[i][k][j] = rand_v32();
+      int16_t * s_ = (int16_t *) & S_Eval[i][k][0];
+
+      for(int j=0; j < 128; j++) {
+        s_[j] = nice_rand();
       }
     }
   }
-  for(int i=0; i<8; i++) {
-    A[i] = rand_v32();
+
+  int16_t * a_ = (int16_t *) &A[0];
+  for(int i=0; i<128; i++) {
+    a_[i] = nice_rand();
   }
 }
 
