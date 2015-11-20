@@ -133,6 +133,25 @@ int test_fft(int N, int width, i16 omega) {
 	return 0;
 }
 
+int test_rounding() {
+	v32 A;
+	uint64_t r = 0;
+	// initialise un tableau pseudo-aléatoire
+	for(int i = 0; i <16; i++) {
+		A[i] = rand() & 0x00ff;
+	}
+	for(int i = 14; i >= 0; i-=2) {
+		r <<= 4;
+		r ^= (A[i] >> 4);
+
+		r <<= 4;
+		r ^= (A[i+1] >> 4);
+	}
+
+	uint64_t r2 = rounding(A);
+	// printf("%#" PRIx64 " VS %#" PRIx64 "\n", r, r2);
+	return r == r2;
+}
 
 int main() {
 	printf("parallel_reduce : %d\n", test_parallelreduce());
@@ -140,5 +159,5 @@ int main() {
 	printf("fft8   : %d\n", test_fft(8, 16, 4)); 
 	printf("fft16  : %d\n", test_fft(16, 8, 2)); 
 	printf("fft128  : %d\n", test_fft(128, 1, 42)); 
-
+	printf("rounding : %d\n", test_rounding());
 }

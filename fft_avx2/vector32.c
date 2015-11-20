@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -409,3 +408,32 @@ void fft128(void *a) {
   A[6] = REDUCE_FULL(X6);
   A[7] = REDUCE_FULL(X7);
 } 
+
+const v32 REJECTION_VECT = v32_cst(-1);
+const v32 rm0 = {0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00};
+const v32 rm1 = {0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0};
+const __v32qi p0 = {0x00, 0x04, 0x08, 0x0c, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+                    0x00, 0x04, 0x08, 0x0c, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,};
+const __v8si p1 = {0, 4, 1, 2, 3, 5, 6, 7};
+
+
+void dump(const char *name, __m256i a) {
+  printf("%s = ", name);
+  for(int i = 0; i < 32; i++) {
+    printf("%02x-", (unsigned char) ((__v32qi) a)[i]);
+  }
+  printf("\n");  
+}
+
+int keep(const v32 a) {
+  return v32_movemask(v32_cmp_eq(a, REJECTION_VECT));
+}
+
+uint64_t rounding(const v32 a) {
+  v32 b = _mm256_srli_epi32(a & rm0, 0);
+  v32 c = _mm256_srli_epi32(a & rm1, 20);
+  v32 d = b ^ c; // in d, each dword contains a meaningful top byte
+  v32 e = _mm256_shuffle_epi8(d, p0); // inside each lane, everything is OK
+  v32 f = _mm256_permutevar8x32_epi32(e, p1); // move everything to the first lane
+  return _mm256_extract_epi64(f, 0); // get it
+}

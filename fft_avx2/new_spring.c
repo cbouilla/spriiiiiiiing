@@ -29,7 +29,7 @@ const v32 omegaPowers[8] = {
 };
 
 
-const v32 NULL_VECT = v32_cst(0); 
+const v32 NULL_VECT = v32_cst(0 ); 
 const v32 BIT6 = v32_cst(4095);
 const v32 BIT5 = v32_cst(1024);
 const v32 BIT4 = v32_cst(255);
@@ -81,12 +81,12 @@ uint64_t UpdateCounterMode(uint64_t x, v32 *Prod, const uint64_t Gray){
 }
 
 // renvoie le XOR de n_bytes octets de flux
-unsigned short int GrayCounterMode(int n_bytes){
+uint64_t GrayCounterMode(int n_bytes){
   v32 Poly[8], Prod[8];
   uint64_t x=0, Gray_counter=0;
   int count = 0;
 
-  unsigned short FinalOutput = 0;
+  uint64_t FinalOutput = 0;
 
 
   // Setup
@@ -99,48 +99,9 @@ unsigned short int GrayCounterMode(int n_bytes){
     // Extraction du flux
     ConvertEvalToCoefficients(Prod, Poly);
     for(int i = 0; i < 8; i++) {
-      v32 Y;
-      if (v32_movemask(v32_cmp_eq(Poly[i], NULL_VECT)) == 0) { //Perform Rejection-sampling.
-          /*if (EXTRACTED_BITS > 1) {
-            Y = Poly[i] * Poly[i];
-          }*/
-
-          // extract signs
-          int m = v32_movemask(v32_cmp_gt(Poly[i], NULL_VECT));
-
-          if (EXTRACTED_BITS == 1) {
-            FinalOutput ^=  ((m & 0x55550000) >> 15) ^ (m & 0x00005555);
-            count += 2;
-            continue;
-          }
-
-          // square the vector to get absolute values
-          Y = Poly[i] * Poly[i];
-          int n = v32_movemask(v32_cmp_gt(Y, BIT6));
-          short int high = (n & 0x55550000) ^ (m & 0xcccc0000);
-          short int low = (n & 0x00005555) ^ (m & 0x0000cccc);
-
-          FinalOutput ^= high >> 16;
-          FinalOutput ^=  low;
-
-          if (EXTRACTED_BITS == 2) {  
-            count += 4;
-            continue;
-          }
-  
-          int o = v32_movemask(v32_cmp_gt(Y, BIT5));
-          if (EXTRACTED_BITS == 3) {
-            FinalOutput ^=  ((o & 0x55550000) >> 15) ^ (o & 0x00005555);
-            count += 6;
-            continue;
-          }
-
-          int p = v32_movemask(v32_cmp_gt(Y, BIT4));
-          short int third =  (o & 0x55550000) ^ (p & 0xcccc0000);
-          short int fourth = (o & 0x00005555) ^ (p & 0x0000cccc);
-
-          FinalOutput ^= third >> 16;
-          FinalOutput ^= fourth;
+      const v32 a = Poly[i];
+      if (keep(a) == 0) {                 // Rejection-sampling.
+          FinalOutput ^= rounding(a);
           count += 8;
       }
     }
@@ -184,12 +145,12 @@ int main(){
 
   uint64_t tsc = rdtsc();
 
-  unsigned short int Output = GrayCounterMode(N_BYTES);
+  uint64_t Output = GrayCounterMode(N_BYTES);
   
   tsc = rdtsc() - tsc;
 
-  printf("Output: %d\n", Output);
-  printf ("%f c/B\n", 8.*tsc/(1.*N_BYTES*8));
+  printf("Output: %#" PRIx64 "\n", Output);
+  printf ("%f c/B\n", tsc/(1.*N_BYTES));
 
   return 0;
 }
