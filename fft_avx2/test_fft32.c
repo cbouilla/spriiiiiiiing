@@ -153,6 +153,34 @@ int test_rounding() {
 	return r == r2;
 }
 
+int test_BCH() {
+	v16 A;
+	
+	for(int i = 0; i <8; i++) {
+		A[i] = rand();
+	}
+	
+	uint64_t a = BCH128to64(A);
+	uint64_t b = BCH128to64_clmul(A);
+	return a == b;
+}
+
+int test_msb() {
+	v32 A;
+	uint16_t r = 0;
+	// initialise un tableau pseudo-aléatoire
+	for(int i = 0; i <16; i++) {
+		A[i] = (rand() % 257) - 128;
+	}
+	for(int i = 15; i >= 0; i--) {
+		r <<= 1;
+		r ^= (A[i] > 0) ? 1 : 0;
+	}
+
+	uint16_t r2 = msb(A);
+	return r == r2;
+}
+
 int main() {
 	printf("parallel_reduce : %d\n", test_parallelreduce());
 	printf("butterfly : %d\n", test_butterfly(5)); 
@@ -160,4 +188,6 @@ int main() {
 	printf("fft16  : %d\n", test_fft(16, 8, 2)); 
 	printf("fft128  : %d\n", test_fft(128, 1, 42)); 
 	printf("rounding : %d\n", test_rounding());
+	printf("BCH : %d\n", test_BCH());
+	printf("msb : %d\n", test_msb());
 }

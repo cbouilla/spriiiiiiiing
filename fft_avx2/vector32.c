@@ -409,12 +409,15 @@ void fft128(void *a) {
   A[7] = REDUCE_FULL(X7);
 } 
 
+const v32 ZERO_VECT = v32_cst(0);
 const v32 REJECTION_VECT = v32_cst(-1);
 const v32 rm0 = {0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00};
 const v32 rm1 = {0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0};
 const __v32qi p0 = {0x00, 0x04, 0x08, 0x0c, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-                    0x00, 0x04, 0x08, 0x0c, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,};
-const __v8si p1 = {0, 4, 1, 2, 3, 5, 6, 7};
+                    0x00, 0x04, 0x08, 0x0c, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+const __v8si  p1 = {0, 4, 1, 2, 3, 5, 6, 7};
+const __v32qi p2 = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e,
+                    0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
 
 
 void dump(const char *name, __m256i a) {
@@ -425,8 +428,25 @@ void dump(const char *name, __m256i a) {
   printf("\n");  
 }
 
+
+void dump16(const char *name, __m128i a) {
+  printf("%s = ", name);
+  for(int i = 0; i < 16; i++) {
+    printf("%02x-", (unsigned char) ((__v16qi) a)[i]);
+  }
+  printf("\n");  
+}
+
+// rejection sampling
 int keep(const v32 a) {
   return v32_movemask(v32_cmp_eq(a, REJECTION_VECT));
+}
+
+// extract just the sign
+uint16_t msb(const v32 a) {
+  v32 mask = v32_cmp_gt(a, ZERO_VECT);
+  v32 stacked = _mm256_shuffle_epi8(mask, p2);
+  return v32_movemask(stacked) >> 8;
 }
 
 uint64_t rounding(const v32 a) {
@@ -436,4 +456,94 @@ uint64_t rounding(const v32 a) {
   v32 e = _mm256_shuffle_epi8(d, p0); // inside each lane, everything is OK
   v32 f = _mm256_permutevar8x32_epi32(e, p1); // move everything to the first lane
   return _mm256_extract_epi64(f, 0); // get it
+}
+
+/*
+ * multiply 128 bits (actually only first 127) with the generator matrix of bch code
+ * in order to produce only 64 bits. the code distance is d=21.
+ * we then use the 128th bit as a parity extension bit to the code and get distance d=22
+ * input: array of 2 packed 64bit integers
+ * output: packed 64 bit integer
+ *
+ * we have 4 possible generator polynomials:
+ * [0, 2, 7, 8, 10, 12, 14, 15, 16, 23, 25, 27, 28, 30, 31, 32, 33, 37, 38, 39, 40, 41, 42, 44, 45, 48, 58, 61, 63]
+ * [0, 2, 5, 15, 18, 19, 21, 22, 23, 24, 25, 26, 30, 31, 32, 33, 35, 36, 38, 40, 47, 48, 49, 51, 53, 55, 56, 61, 63]
+ * [0, 1, 2, 3, 5, 8, 13, 17, 19, 21, 23, 27, 28, 32, 34, 35, 36, 39, 41, 43, 44, 50, 52, 54, 59, 60, 61, 62, 63]
+ * [0, 1, 2, 3, 4, 9, 11, 13, 19, 20, 22, 24, 27, 28, 29, 31, 35, 36, 40, 42, 44, 46, 50, 55, 58, 60, 61, 62, 63]
+ *
+ * no specific polynomial is preferable. so we choose the first one
+ */
+ const __v2di generatorBCHMatrix = {0xa40137e3da81d585, 0xa40137e3da81d585};
+uint64_t BCH128to64_clmul (const __v2di in) {
+  uint64_t parity = _mm_extract_epi64(in, 0);
+  __m128i t0 = _mm_clmulepi64_si128(in, generatorBCHMatrix, 0x00);
+  __m128i t1 = _mm_clmulepi64_si128(in, generatorBCHMatrix, 0x11);
+  __m128i p = t0 ^ _mm_shuffle_epi32(t1,  0x4e);
+  uint64_t low = _mm_extract_epi64(p, 0);
+  return low ^ -(parity & 1);
+}
+
+uint64_t BCH128to64 (const __v2di in) {
+  register uint64_t b1 = in[0];
+  register uint64_t res = b1;
+  res ^= (b1 << 2);
+  res ^= (b1 << 7);
+  res ^= (b1 << 8);
+  res ^= (b1 << 10);
+  res ^= (b1 << 12);
+  res ^= (b1 << 14);
+  res ^= (b1 << 15);
+  res ^= (b1 << 16);
+  res ^= (b1 << 23);
+  res ^= (b1 << 25);
+  res ^= (b1 << 27);
+  res ^= (b1 << 28);
+  res ^= (b1 << 30);
+  res ^= (b1 << 31);
+  res ^= (b1 << 32);
+  res ^= (b1 << 33);
+  res ^= (b1 << 37);
+  res ^= (b1 << 38);
+  res ^= (b1 << 39);
+  res ^= (b1 << 40);
+  res ^= (b1 << 41);
+  res ^= (b1 << 42);
+  res ^= (b1 << 44);
+  res ^= (b1 << 45);
+  res ^= (b1 << 48);
+  res ^= (b1 << 58);
+  res ^= (b1 << 61);
+  res ^= (b1 << 63);
+
+  register uint64_t b2 = in[1];
+  res ^= (b2 >> 62);
+  res ^= (b2 >> 57);
+  res ^= (b2 >> 56);
+  res ^= (b2 >> 54);
+  res ^= (b2 >> 52);
+  res ^= (b2 >> 50);
+  res ^= (b2 >> 49);
+  res ^= (b2 >> 48);
+  res ^= (b2 >> 41);
+  res ^= (b2 >> 39);
+  res ^= (b2 >> 37);
+  res ^= (b2 >> 36);
+  res ^= (b2 >> 34);
+  res ^= (b2 >> 33);
+  res ^= (b2 >> 32);
+  res ^= (b2 >> 31);
+  res ^= (b2 >> 27);
+  res ^= (b2 >> 26);
+  res ^= (b2 >> 25);
+  res ^= (b2 >> 24);
+  res ^= (b2 >> 23);
+  res ^= (b2 >> 22);
+  res ^= (b2 >> 20);
+  res ^= (b2 >> 19);
+  res ^= (b2 >> 16);
+  res ^= (b2 >> 6);
+  res ^= (b2 >> 3);
+  res ^= (b2 >> 1);
+
+  return res ^ ((uint64_t)(-(b2&1)));
 }
