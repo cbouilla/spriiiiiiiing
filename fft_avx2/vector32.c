@@ -1,38 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-//#include "compat.h"
 #include "vector.h"
-
-//#define PRINT_SOME 0
-
-// #define CV(x) { .u16 = {x, x, x, x, x, x, x, x}}
- const v32 cst128 = v32_cst(128);
- const v32 cst255 = v32_cst(255);
- const v32 cst257 = v32_cst(257);
-//static const union cv8  V0 = CV(0);
-
-
-/*
- * Reduce modulo 257; result is in [-127; 383]
- * REDUCE(x) := (x&255) - (x>>8)
- */
-#define REDUCE(x)                               \
-  ((x & cst255) - v32_shift_r(x, 8))
-
-/*
- * Reduce from [-127; 383] to [-128; 128]
- * EXTRA_REDUCE_S(x) := x<=128 ? x : x-257
- */
-#define EXTRA_REDUCE(x)                       \
-  (x - (cst257 & v32_cmp_gt(x, cst128)))
-
-/*
- * Reduce modulo 257; result is in [-128; 128]
- */
-#define REDUCE_FULL(x)                        \
-  EXTRA_REDUCE(REDUCE(x))
-
 
 // u, v, #bits to shift
 #define DIF_BUTTERFLY(_u,_v, n)         \
@@ -41,7 +10,7 @@
     const v32 v = _v;              \
     _u = u + v;                    \
     if (n)                         \
-      _v = v32_shift_l(u - v, n);  \
+      _v = _mm256_slli_epi16(u - v, n);  \
     else                           \
       _v = u - v;                  \
   } while(0)
@@ -49,7 +18,7 @@
 #define DIT_BUTTERFLY(_u, _v, n)   \
   do {                             \
     const v32 u = _u;              \
-    const v32 v = (n) ? v32_shift_l(_v, n) : _v; \
+    const v32 v = (n) ? _mm256_slli_epi16(_v, n) : _v; \
     _u = u + v;                    \
     _v = u - v;                    \
   } while(0)
@@ -58,7 +27,7 @@
   do {                                              \
     const v16 u = _mm256_extracti128_si256(_x, 0);  \
     const v16 v = _mm256_extracti128_si256(_x, 1);  \
-    const v16 w = n ? v16_shift_l(v, n) : v;        \
+    const v16 w = n ? _mm_slli_epi16(v, n) : v;        \
     const v16 foo = u + w;                          \
     const v16 bar = u - w;                          \
     const v32 fooooo = _mm256_castsi128_si256(foo); \
@@ -438,15 +407,16 @@ void dump16(const char *name, __m128i a) {
 }
 
 // rejection sampling
-int keep(const v32 a) {
-  return v32_movemask(v32_cmp_eq(a, REJECTION_VECT));
+int reject(const v32 a) {
+  v32 mask = _mm256_cmpeq_epi16(a, REJECTION_VECT);
+  return _mm256_movemask_epi8(mask);
 }
 
 // extract just the sign
 uint16_t msb(const v32 a) {
-  v32 mask = v32_cmp_gt(a, ZERO_VECT);
+  v32 mask = _mm256_cmpgt_epi16(a, ZERO_VECT);
   v32 stacked = _mm256_shuffle_epi8(mask, p2);
-  return v32_movemask(stacked) >> 8;
+  return _mm256_movemask_epi8(stacked) >> 8;
 }
 
 uint64_t rounding(const v32 a) {
