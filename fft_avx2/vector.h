@@ -7,6 +7,7 @@
 
 typedef __v8hi v16;
 typedef __v16hi v32;
+typedef __v32qi vLog;
 
 #define v32_cst(x) {x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x}
 /*#define v32_cmp_gt   _mm256_cmpgt_epi16

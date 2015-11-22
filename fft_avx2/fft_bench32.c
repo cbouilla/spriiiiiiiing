@@ -5,11 +5,10 @@
 #include <assert.h>
 #include <inttypes.h>
 
-#include "vector32.c"
-#include "vector.h"
+#include "common.c"
 
 
-#define N_ITERATIONS 100000000
+#define N_ITERATIONS 100000001
 
 void time_fft_8() {
   v32 stuff[8];
@@ -115,10 +114,44 @@ void time_fft_128() {
 }
 
 
+void time_subset_sum() {
+  vLog Sum[4], Total[4];
+
+  Total[0] = ZERO_VECT;
+  Total[1] = ZERO_VECT;
+  Total[2] = ZERO_VECT;
+  Total[3] = ZERO_VECT;
+
+  uint64_t tsc = rdtsc();
+  for(int i=0; i < N_ITERATIONS; i++) {
+    ComputeSubsetSum(0x123456789abcdef0 + i, Sum);
+    //ComputeSubsetSum_tabulated(0x123456789abcdef0 + i, Sum);
+    Total[0] += Sum[0];
+    Total[1] += Sum[1];
+    Total[2] += Sum[2];
+    Total[3] += Sum[3];
+  }
+  tsc = rdtsc() - tsc;
+
+  // display to force compiler not to skip the fft (+ human checking...)
+  for(int i=0; i<4; i++) {
+    printf("x[%02d] = ", i);
+    for(int j=0; j < 32; j++)
+      printf("%02x ", (unsigned char) Total[i][j]);
+    printf("\n");
+  }
+
+  printf ("1x subset-sum  : %f cycles/iterations\n", tsc/(1.*N_ITERATIONS));
+}
+  
+
 
 int main(){
-  time_fft_8();
+  init_secrets_log();
+ /* time_fft_8();
   time_fft_16();
-  time_fft_128();
+  time_fft_128();*/
+  init_subset_sum_tables();
+  time_subset_sum();
   return 0;
 }

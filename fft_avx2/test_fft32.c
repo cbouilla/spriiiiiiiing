@@ -3,8 +3,7 @@
 #include <inttypes.h>
 #include <assert.h>
             
-#include "vector.h"
-#include "vector32.c"
+#include "common.c"
 
 typedef short int i16;
 
@@ -181,6 +180,24 @@ int test_msb() {
 	return r == r2;
 }
 
+int test_subset_sum() {
+	vLog SumA[4], SumB[4];
+	init_secrets_log();
+	init_subset_sum_tables();
+
+	ComputeSubsetSum(0x123456789abcdef0, SumA);
+    ComputeSubsetSum_tabulated(0x123456789abcdef0, SumB);
+
+    for(int i=0; i<4; i++) {
+    	for(int j=0; j<32; j++) {
+    		if (SumA[i][j] != SumB[i][j]) {
+    			return 0;
+    		}
+    	}
+    }
+    return 1;
+}
+
 int main() {
 	printf("parallel_reduce : %d\n", test_parallelreduce());
 	printf("butterfly : %d\n", test_butterfly(5)); 
@@ -190,4 +207,5 @@ int main() {
 	printf("rounding : %d\n", test_rounding());
 	printf("BCH : %d\n", test_BCH());
 	printf("msb : %d\n", test_msb());
+	printf("subset_sum : %d\n", test_subset_sum());
 }
