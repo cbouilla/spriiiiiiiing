@@ -149,16 +149,20 @@ static const int16_t generatorPowers[257] = {
   -51, 104, 55, -92, -19, -57, 86, 1};
 
 
-// Coef <--- coefficients du polynôme représenté sous forme de log d'évaluations dans Log
-void ConvertSubsetSumToCoefficients(const vLog *Log, v32 *Coef) {
-  
+void exponentiate(const vLog *Log, v32 *Coef) {
   // remplace les logs par les "vraies" valeurs. Eventuellement parallelisable.
   uint8_t *l_ = (uint8_t *) Log;
   int16_t *c_ = (int16_t *) Coef;
   for(int i = 0; i < 128; i++) {
     c_[i] = generatorPowers[ l_[i] ];
   }
+}
 
+
+// Coef <--- coefficients du polynôme représenté sous forme de log d'évaluations dans Log
+void ConvertSubsetSumToCoefficients(const vLog *Log, v32 *Coef) {
+  
+  exponentiate_ssse3(Log, Coef);
   fft128(Coef);
 
   for(int i=0; i<8; i++){
@@ -167,6 +171,7 @@ void ConvertSubsetSumToCoefficients(const vLog *Log, v32 *Coef) {
 }
 
 
+#define likely(x)    __builtin_expect (!!(x), 1)
 
 void inline ComputeSubsetSum(uint64_t x, vLog *Log) {
   // initialize Log with Log_a
@@ -174,8 +179,6 @@ void inline ComputeSubsetSum(uint64_t x, vLog *Log) {
     Log[1] = A_log[1];
     Log[2] = A_log[2];
     Log[3] = A_log[3];
-
-#define likely(x)    __builtin_expect (!!(x), 1)
 
   // scan the bits of x, least signifiant to most significant
   while(likely(x)) {
@@ -187,9 +190,9 @@ void inline ComputeSubsetSum(uint64_t x, vLog *Log) {
     Log[1] += S_log[j][1];
     Log[2] += S_log[j][2];
     Log[3] += S_log[j][3];
- 
   }
 }
+
 
 void  ComputeSubsetSum_tabulated(uint64_t x, vLog *Log) {
   // initialize Log with Log_a

@@ -198,6 +198,51 @@ int test_subset_sum() {
     return 1;
 }
 
+int test_exponentiate_tables() {
+	for(int i=0; i < 16; i++) {
+		//printf("T[%d] = %d\n", i, (int16_t) ((int8_t) generatorPowersT2[i]) + 2);
+	}
+
+	for(int i=0; i<256; i++) {
+		int low = i % 16;
+		int high = i / 16;
+		int a = (generatorPowers[i] + 257) % 257;
+		int b = ((int8_t) generatorPowersT1[low] + 257) % 257;
+		int c = ((int8_t) generatorPowersT2[high] + 2 + 257) % 257;
+
+		if (a != ((b*c) % 257)) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+
+
+int test_exponentiate() {
+	vLog L[4];
+	v32 E1[8], E2[8];
+	for(int i=0; i<4; i++) {
+    	for(int j=0; j<32; j++) {
+    		L[i][j] = rand() & 0xff;
+    	}
+	}  
+   	exponentiate(L, E1);
+	exponentiate_ssse3(L, E2);
+
+	for(int a=0; a<128; a++) {
+    	int i = a / 16;
+    	int j = a % 16;
+    	uint8_t l =  L[a / 32][a % 32];
+    	if (E1[i][j] != E2[i][j]) {
+	    	printf("i=%d, exp(%02x) = %d vs %d (real=%d)\n", a, l, E1[i][j], E2[i][j], generatorPowers[l]);
+    		return 0;
+		}
+    }
+    return 1;
+}
+
 int main() {
 	printf("parallel_reduce : %d\n", test_parallelreduce());
 	printf("butterfly : %d\n", test_butterfly(5)); 
@@ -208,4 +253,6 @@ int main() {
 	printf("BCH : %d\n", test_BCH());
 	printf("msb : %d\n", test_msb());
 	printf("subset_sum : %d\n", test_subset_sum());
+	printf("exponentiate tables : %d\n", test_exponentiate_tables());
+	printf("exponentiate : %d\n", test_exponentiate());
 }

@@ -144,14 +144,50 @@ void time_subset_sum() {
   printf ("1x subset-sum  : %f cycles/iterations\n", tsc/(1.*N_ITERATIONS));
 }
   
+void time_exponentiate() {
+  vLog Sum[4];
+  v32 Total[8], Coef[8];
 
+  Sum[0] = A_log[0];
+  Sum[1] = A_log[1];
+  Sum[1] = A_log[2];
+  Sum[2] = A_log[3];
+
+  for(int i=0; i<8; i++) {
+    Total[i] = ZERO_VECT;
+  }
+  
+  uint64_t tsc = rdtsc();
+  for(int i=0; i < N_ITERATIONS; i++) {
+    exponentiate(Sum, Coef);
+    //ComputeSubsetSum_tabulated(0x123456789abcdef0 + i, Sum);
+  
+    for(int i=0; i<8; i++) {
+      Total[i] += Coef[i];
+    }
+  
+  }
+  tsc = rdtsc() - tsc;
+
+  // display to force compiler not to skip the fft (+ human checking...)
+  for(int i=0; i<4; i++) {
+    printf("x[%02d] = ", i);
+    for(int j=0; j < 32; j++)
+      printf("%02x ", (unsigned char) Total[i][j]);
+    printf("\n");
+  }
+
+  printf ("1x subset-sum  : %f cycles/iterations\n", tsc/(1.*N_ITERATIONS));
+}
 
 int main(){
   init_secrets_log();
  /* time_fft_8();
   time_fft_16();
-  time_fft_128();*/
-  init_subset_sum_tables();
-  time_subset_sum();
+  time_fft_128();
+  init_subset_sum_tables()
+  time_subset_sum(); */
+  time_exponentiate();
+
   return 0;
 }

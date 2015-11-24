@@ -517,3 +517,49 @@ uint64_t BCH128to64 (const __v2di in) {
 
   return res ^ ((uint64_t)(-(b2&1)));
 }
+
+static const vLog lmask = {0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f,
+                           0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f};
+static const v32 two_vector = v32_cst(2);
+
+static const vLog generatorPowersT1 = 
+{0x01, 0x03, 0x09, 0x1b, 0x51, 0xf2, 0xd6, 0x82, 0x87, 0x96, 0xc3, 0x4a, 0xdd, 0x97, 0xc6, 0x53, 
+ 0x01, 0x03, 0x09, 0x1b, 0x51, 0xf2, 0xd6, 0x82, 0x87, 0x96, 0xc3, 0x4a, 0xdd, 0x97, 0xc6, 0x53};
+
+static const vLog generatorPowersT2 =
+{0xff, 0xf6, 0x3e, 0x0, 0xee, 0x7e, 0x02, 0xde, 0xfd, 0x6, 0xbe, 0xfc, 0xe, 0x7f, 0xfa, 0x1e,
+ 0xff, 0xf6, 0x3e, 0x0, 0xee, 0x7e, 0x02, 0xde, 0xfd, 0x6, 0xbe, 0xfc, 0xe, 0x7f, 0xfa, 0x1e};
+
+void exponentiate_ssse3(const vLog *Log, v32 *Coef) {
+
+// This is slightly faster because everything is parallelized
+  for (int i = 0; i < 4; ++i) {
+    // get low 4 bits of each log
+    vLog low = Log[i] & lmask;
+    
+    // 32x parallel 4-bit table lookup
+    vLog x = _mm256_shuffle_epi8(generatorPowersT1, low);
+
+    // shift right by 4 bits (no instruction with 8-bit words; use 32-bit words)
+    vLog high = _mm256_srli_epi16(Log[i], 4) & lmask;
+
+    // 32x parallel 4-bit table lookup
+    vLog y = _mm256_shuffle_epi8(generatorPowersT2, high);
+   
+    // multiplier ensemble x et y --> attention ça va produire 2 vecteurs + sign-extend
+    __m128i xbot = _mm256_extractf128_si256(x, 0);
+    __m128i ybot = _mm256_extractf128_si256(y, 0);
+    v32 xbot_signed = _mm256_cvtepi8_epi16(xbot);
+    v32 ybot_signed = _mm256_cvtepi8_epi16(ybot);  
+    v32 ybot_p2 = ybot_signed + two_vector;
+    v32 pbot = xbot_signed * ybot_p2;
+    Coef[2*i] = REDUCE_FULL(pbot);
+
+    __m128i xtop = _mm256_extractf128_si256(x, 1);
+    __m128i ytop = _mm256_extractf128_si256(y, 1);
+    v32 xtop_signed = _mm256_cvtepi8_epi16(xtop);
+    v32 ytop_signed = _mm256_cvtepi8_epi16(ytop);
+    v32 ytop_p2 = ytop_signed + two_vector;
+    Coef[2*i+1] = REDUCE_FULL(xtop_signed * ytop_p2);
+  }
+}
