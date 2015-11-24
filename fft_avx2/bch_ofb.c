@@ -8,7 +8,7 @@
 #define K 64
 #include "common.c"
 
-#define N_BYTES 320000000
+#define N_BYTES (512*1024*1024)
 
 // renvoie le XOR de n_bytes octets de flux
 uint64_t OutputFeedbackMode(int n_bytes){
