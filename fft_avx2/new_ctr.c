@@ -5,11 +5,10 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#define K 64
+#define N_BYTES (1024ull*1024*1024)
+
 #include "common.c"
-
-#define EXTRACTED_BITS 4
-#define N_BYTES 320000000
-
 
 // renvoie le XOR de n_bytes octets de flux
 uint64_t GrayCounterMode(int n_bytes){
@@ -19,19 +18,16 @@ uint64_t GrayCounterMode(int n_bytes){
 
   uint64_t FinalOutput = 0;
 
-
   // Setup
   for(int i=0; i < 8; i++){
     Prod[i] = A[i];
   }
 
   while(count < n_bytes) {
-
-    // Extraction du flux
     ConvertEvalToCoefficients(Prod, Poly);
     for(int i = 0; i < 8; i++) {
       const v32 a = Poly[i];
-      if (!reject(a)) {                 // Rejection-sampling.
+      if (!reject(a)) {
           FinalOutput ^= rounding(a);
           count += 8;
       }

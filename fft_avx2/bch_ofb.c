@@ -5,9 +5,9 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#define K 64
 #include "common.c"
 
-#define EXTRACTED_BITS 4
 #define N_BYTES 320000000
 
 // renvoie le XOR de n_bytes octets de flux

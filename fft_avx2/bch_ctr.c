@@ -5,10 +5,11 @@
 #include <assert.h>
 #include <inttypes.h>
 
-#include "common.c"
-
+#define K 64
 #define EXTRACTED_BITS 4
 #define N_BYTES 320000000
+
+#include "common.c"
 
 // renvoie le XOR de n_bytes octets de flux
 uint64_t GrayCounterMode(int n_bytes){

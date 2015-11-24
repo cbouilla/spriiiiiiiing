@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <assert.h>
             
+#define K 64            
 #include "common.c"
 
 typedef short int i16;

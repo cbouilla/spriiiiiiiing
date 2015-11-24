@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#define K 64
 #include "common.c"
 
 

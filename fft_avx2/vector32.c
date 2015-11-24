@@ -409,7 +409,8 @@ void dump16(const char *name, __m128i a) {
 // rejection sampling
 int reject(const v32 a) {
   v32 mask = _mm256_cmpeq_epi16(a, REJECTION_VECT);
-  return _mm256_movemask_epi8(mask);
+  uint32_t result = _mm256_movemask_epi8(mask);
+  return result;
 }
 
 // extract just the sign

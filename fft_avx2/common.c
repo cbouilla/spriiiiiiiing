@@ -8,9 +8,6 @@
 #include "vector.h"
 #include "vector32.c"
 
-#define EXTRACTED_BITS 4
-#define N_BYTES 320000000
-
 
 v32 A[8];
 v32 S_Eval[64][2][8];
@@ -99,12 +96,12 @@ void init_secrets() {
 
 /**************************** CODE DEDICATED TO THE PRFs ****************************/
 vLog A_log[4];
-vLog S_log[64][4];
-vLog SS_tables[8][256][4];
+vLog S_log[K][4];
+vLog SS_tables[K / 8][256][4];
 
 void init_subset_sum_tables() {
 
-  for(int i=0; i<8; i++) { // for each 8-bit pack in x
+  for(int i=0; i<(K / 8); i++) { // for each 8-bit pack in x
     for(int x=0; x<256; x++) { // for each possible 8-bit value
 
       // include A_log
@@ -113,7 +110,7 @@ void init_subset_sum_tables() {
       SS_tables[i][x][2] = i ? ZERO_VECT : A_log[2];
       SS_tables[i][x][3] = i ? ZERO_VECT : A_log[3];
 
-      for(int k=0; k<8; k++) {
+      for(int k=0; k<K; k++) {
         if (x & (1 << k)) {
           SS_tables[i][x][0] += S_log[8*i + k][0];
           SS_tables[i][x][1] += S_log[8*i + k][1];
@@ -193,10 +190,9 @@ void inline ComputeSubsetSum(uint64_t x, vLog *Log) {
   }
 }
 
-
-void  ComputeSubsetSum_tabulated(uint64_t x, vLog *Log) {
+#if K == 128
+void  ComputeSubsetSum_tabulated(const uint64_t x, const uint64_t y, vLog *Log) {
   // initialize Log with Log_a
-    
   int k = (x & 0xff);
   Log[0] = SS_tables[0][k][0];
   Log[1] = SS_tables[0][k][1];
@@ -204,29 +200,54 @@ void  ComputeSubsetSum_tabulated(uint64_t x, vLog *Log) {
   Log[3] = SS_tables[0][k][3];
 
   for(int i=1; i<8; i++) {
-    k = (x >> (8ULL*i)) & 0xff;
-    
+    k = (x >> (8ull*i)) & 0xff;  
+    Log[0] += SS_tables[i][k][0];
+    Log[1] += SS_tables[i][k][1];
+    Log[2] += SS_tables[i][k][2];
+    Log[3] += SS_tables[i][k][3];
+  }
+  for(int i=0; i<8; i++) {
+    k = (y >> (8ull*i)) & 0xff;  
+    Log[0] += SS_tables[i+8][k][0];
+    Log[1] += SS_tables[i+8][k][1];
+    Log[2] += SS_tables[i+8][k][2];
+    Log[3] += SS_tables[i+8][k][3];
+  }
+}
+#else /* version K == 64 */
+void  ComputeSubsetSum_tabulated(const uint64_t x, vLog *Log) {
+
+  // initialize Log with Log_a
+  int k = (x & 0xff);
+  Log[0] = SS_tables[0][k][0];
+  Log[1] = SS_tables[0][k][1];
+  Log[2] = SS_tables[0][k][2];
+  Log[3] = SS_tables[0][k][3];
+
+  for(int i=1; i<8; i++) {
+    k = (x >> (8ULL*i)) & 0xff;  
     Log[0] += SS_tables[i][k][0];
     Log[1] += SS_tables[i][k][1];
     Log[2] += SS_tables[i][k][2];
     Log[3] += SS_tables[i][k][3];
   }
 }
+#endif
 
 
 // méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
 void init_secrets_log() {
   srand(42);
 
-  for(int i=0; i < 64; i++) {
+  for(int i=0; i < K; i++) {
     uint8_t * s_ = (uint8_t *) & S_log[i][0];
     for(int j=0; j < 128; j++) {
-      s_[j] = rand() & 0xff;
+      s_[j] = (rand() ^ rand()) & 0xff;
     }
   }
 
   uint8_t * a_ = (uint8_t *) &A_log[0];
   for(int i=0; i<128; i++) {
-    a_[i] = rand() & 0xff;
+    a_[i] = (rand() ^ rand()) & 0xff;
   }
 }
