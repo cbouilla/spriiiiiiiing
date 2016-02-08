@@ -3,8 +3,8 @@
 #include <inttypes.h>
 #include <assert.h>
             
-#include "vector.h"
-#include "vector32.c"
+#define K 64            
+#include "common.c"
 
 typedef short int i16;
 
@@ -133,6 +133,116 @@ int test_fft(int N, int width, i16 omega) {
 	return 0;
 }
 
+int test_rounding() {
+	v32 A;
+	uint64_t r = 0;
+	// initialise un tableau pseudo-aléatoire
+	for(int i = 0; i <16; i++) {
+		A[i] = rand() & 0x00ff;
+	}
+	for(int i = 14; i >= 0; i-=2) {
+		r <<= 4;
+		r ^= (A[i] >> 4);
+
+		r <<= 4;
+		r ^= (A[i+1] >> 4);
+	}
+
+	uint64_t r2 = rounding(A);
+	// printf("%#" PRIx64 " VS %#" PRIx64 "\n", r, r2);
+	return r == r2;
+}
+
+int test_BCH() {
+	v16 A;
+	
+	for(int i = 0; i <8; i++) {
+		A[i] = rand();
+	}
+	
+	uint64_t a = BCH128to64(A);
+	uint64_t b = BCH128to64_clmul(A);
+	return a == b;
+}
+
+int test_msb() {
+	v32 A;
+	uint16_t r = 0;
+	// initialise un tableau pseudo-aléatoire
+	for(int i = 0; i <16; i++) {
+		A[i] = (rand() % 257) - 128;
+	}
+	for(int i = 15; i >= 0; i--) {
+		r <<= 1;
+		r ^= (A[i] > 0) ? 1 : 0;
+	}
+
+	uint16_t r2 = msb(A);
+	return r == r2;
+}
+
+int test_subset_sum() {
+	vLog SumA[4], SumB[4];
+	init_secrets_log();
+	init_subset_sum_tables();
+
+	ComputeSubsetSum(0x123456789abcdef0, SumA);
+    ComputeSubsetSum_tabulated(0x123456789abcdef0, SumB);
+
+    for(int i=0; i<4; i++) {
+    	for(int j=0; j<32; j++) {
+    		if (SumA[i][j] != SumB[i][j]) {
+    			return 0;
+    		}
+    	}
+    }
+    return 1;
+}
+
+int test_exponentiate_tables() {
+	for(int i=0; i < 16; i++) {
+		//printf("T[%d] = %d\n", i, (int16_t) ((int8_t) generatorPowersT2[i]) + 2);
+	}
+
+	for(int i=0; i<256; i++) {
+		int low = i % 16;
+		int high = i / 16;
+		int a = (generatorPowers[i] + 257) % 257;
+		int b = ((int8_t) generatorPowersT1[low] + 257) % 257;
+		int c = ((int8_t) generatorPowersT2[high] + 2 + 257) % 257;
+
+		if (a != ((b*c) % 257)) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+
+
+int test_exponentiate() {
+	vLog L[4];
+	v32 E1[8], E2[8];
+	for(int i=0; i<4; i++) {
+    	for(int j=0; j<32; j++) {
+    		L[i][j] = rand() & 0xff;
+    	}
+	}  
+   	exponentiate(L, E1);
+	exponentiate_ssse3(L, E2);
+
+	for(int a=0; a<128; a++) {
+    	int i = a / 16;
+    	int j = a % 16;
+    	uint8_t l =  L[a / 32][a % 32];
+    	if (E1[i][j] != E2[i][j]) {
+	    	printf("i=%d, exp(%02x) = %d vs %d (real=%d)\n", a, l, E1[i][j], E2[i][j], generatorPowers[l]);
+    		return 0;
+		}
+    }
+    return 1;
+}
 
 int main() {
 	printf("parallel_reduce : %d\n", test_parallelreduce());
@@ -140,5 +250,10 @@ int main() {
 	printf("fft8   : %d\n", test_fft(8, 16, 4)); 
 	printf("fft16  : %d\n", test_fft(16, 8, 2)); 
 	printf("fft128  : %d\n", test_fft(128, 1, 42)); 
-
+	printf("rounding : %d\n", test_rounding());
+	printf("BCH : %d\n", test_BCH());
+	printf("msb : %d\n", test_msb());
+	printf("subset_sum : %d\n", test_subset_sum());
+	printf("exponentiate tables : %d\n", test_exponentiate_tables());
+	printf("exponentiate : %d\n", test_exponentiate());
 }

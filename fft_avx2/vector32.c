@@ -1,39 +1,7 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 
-//#include "compat.h"
 #include "vector.h"
-
-//#define PRINT_SOME 0
-
-// #define CV(x) { .u16 = {x, x, x, x, x, x, x, x}}
- const v32 cst128 = v32_cst(128);
- const v32 cst255 = v32_cst(255);
- const v32 cst257 = v32_cst(257);
-//static const union cv8  V0 = CV(0);
-
-
-/*
- * Reduce modulo 257; result is in [-127; 383]
- * REDUCE(x) := (x&255) - (x>>8)
- */
-#define REDUCE(x)                               \
-  ((x & cst255) - v32_shift_r(x, 8))
-
-/*
- * Reduce from [-127; 383] to [-128; 128]
- * EXTRA_REDUCE_S(x) := x<=128 ? x : x-257
- */
-#define EXTRA_REDUCE(x)                       \
-  (x - (cst257 & v32_cmp_gt(x, cst128)))
-
-/*
- * Reduce modulo 257; result is in [-128; 128]
- */
-#define REDUCE_FULL(x)                        \
-  EXTRA_REDUCE(REDUCE(x))
-
 
 // u, v, #bits to shift
 #define DIF_BUTTERFLY(_u,_v, n)         \
@@ -42,7 +10,7 @@
     const v32 v = _v;              \
     _u = u + v;                    \
     if (n)                         \
-      _v = v32_shift_l(u - v, n);  \
+      _v = _mm256_slli_epi16(u - v, n);  \
     else                           \
       _v = u - v;                  \
   } while(0)
@@ -50,7 +18,7 @@
 #define DIT_BUTTERFLY(_u, _v, n)   \
   do {                             \
     const v32 u = _u;              \
-    const v32 v = (n) ? v32_shift_l(_v, n) : _v; \
+    const v32 v = (n) ? _mm256_slli_epi16(_v, n) : _v; \
     _u = u + v;                    \
     _v = u - v;                    \
   } while(0)
@@ -59,7 +27,7 @@
   do {                                              \
     const v16 u = _mm256_extracti128_si256(_x, 0);  \
     const v16 v = _mm256_extracti128_si256(_x, 1);  \
-    const v16 w = n ? v16_shift_l(v, n) : v;        \
+    const v16 w = n ? _mm_slli_epi16(v, n) : v;        \
     const v16 foo = u + w;                          \
     const v16 bar = u - w;                          \
     const v32 fooooo = _mm256_castsi128_si256(foo); \
@@ -274,6 +242,7 @@ static const v32 FFT128_Twiddle[8] =  {
   { 1,   49,   88,  -57,   34,  124,  -92,  118,  128,  104,  -44, -100,  -17,  -62,   46,  -59}};
 
 // the whole she-bang. FFT-128 with omega=42 !
+// input in [-128,383] (i.e. "REDUCEd" but not "EXTRA_REDUCEd")
 void fft128(void *a) {
   v32* const A = a;
   register v32 X0, X1, X2, X3, X4, X5, X6, X7;
@@ -293,7 +262,6 @@ void fft128(void *a) {
   DIF_BUTTERFLY(X2, X6, 4);
   DIF_BUTTERFLY(X3, X7, 6);
   X5 = REDUCE(X5);
-  X6 = REDUCE(X6);
   X7 = REDUCE(X7);
 
   DIF_BUTTERFLY(X0, X2, 0);
@@ -306,7 +274,7 @@ void fft128(void *a) {
   DIF_BUTTERFLY(X4, X5, 0);
   DIF_BUTTERFLY(X6, X7, 0);
   
-  X0 = REDUCE_FULL(X0); // FIXME later
+  // X0 = REDUCE_FULL(X0); 
   X1 = REDUCE_FULL(X1);
   X2 = REDUCE_FULL(X2);
   X3 = REDUCE_FULL(X3);
@@ -326,14 +294,14 @@ void fft128(void *a) {
   X7 *= FFT128_Twiddle[7];
 
   // qu'est-ce qui est strictement nécessaire là-dedans ?
-  X0 = REDUCE_FULL(X0);
-  X1 = REDUCE_FULL(X1);
-  X2 = REDUCE_FULL(X2);
-  X3 = REDUCE_FULL(X3);
-  X4 = REDUCE_FULL(X4);
-  X5 = REDUCE_FULL(X5);
-  X6 = REDUCE_FULL(X6);
-  X7 = REDUCE_FULL(X7);
+  X0 = REDUCE(X0);
+  X1 = REDUCE(X1);
+  X2 = REDUCE(X2);
+  X3 = REDUCE(X3);
+  X4 = REDUCE(X4);
+  X5 = REDUCE(X5);
+  X6 = REDUCE(X6);
+  X7 = REDUCE(X7);
 
   // STEP 3 : (nearly complete) transpose
   INTERLEAVE(X0, X1);
@@ -375,12 +343,14 @@ void fft128(void *a) {
   DIT_BUTTERFLY(X4, X6, 2);
   DIT_BUTTERFLY(X1, X3, 4);
   DIT_BUTTERFLY(X5, X7, 6);
-  X4 = REDUCE(X4);
+  X2 = REDUCE(X2);
   X5 = REDUCE(X5);
   X1 = REDUCE(X1);
   X3 = REDUCE(X3);
   X5 = REDUCE(X5);
-  X7 = REDUCE(X7);
+  X7 = REDUCE_FULL(X7);
+
+// TODO : réfléchir à combiner BUTTERFLY et REDUCE
 
   DIT_TROUBLESOME_BUTTERFLY(X0, 0);
   DIT_TROUBLESOME_BUTTERFLY(X4, 1);
@@ -407,3 +377,190 @@ void fft128(void *a) {
   A[6] = REDUCE_FULL(X6);
   A[7] = REDUCE_FULL(X7);
 } 
+
+const v32 ZERO_VECT = v32_cst(0);
+const v32 REJECTION_VECT = v32_cst(-1);
+const v32 rm0 = {0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00};
+const v32 rm1 = {0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0};
+const __v32qi p0 = {0x00, 0x04, 0x08, 0x0c, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+                    0x00, 0x04, 0x08, 0x0c, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+const __v8si  p1 = {0, 4, 1, 2, 3, 5, 6, 7};
+const __v32qi p2 = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e,
+                    0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+
+
+void dump(const char *name, __m256i a) {
+  printf("%s = ", name);
+  for(int i = 0; i < 32; i++) {
+    printf("%02x-", (unsigned char) ((__v32qi) a)[i]);
+  }
+  printf("\n");  
+}
+
+
+void dump16(const char *name, __m128i a) {
+  printf("%s = ", name);
+  for(int i = 0; i < 16; i++) {
+    printf("%02x-", (unsigned char) ((__v16qi) a)[i]);
+  }
+  printf("\n");  
+}
+
+// rejection sampling
+int reject(const v32 a) {
+  v32 mask = _mm256_cmpeq_epi16(a, REJECTION_VECT);
+  uint32_t result = _mm256_movemask_epi8(mask);
+  return result;
+}
+
+// extract just the sign
+uint16_t msb(const v32 a) {
+  v32 mask = _mm256_cmpgt_epi16(a, ZERO_VECT);
+  v32 stacked = _mm256_shuffle_epi8(mask, p2);
+  return _mm256_movemask_epi8(stacked) >> 8;
+}
+
+uint64_t rounding(const v32 a) {
+  v32 b = _mm256_srli_epi32(a & rm0, 0);
+  v32 c = _mm256_srli_epi32(a & rm1, 20);
+  v32 d = b ^ c; // in d, each dword contains a meaningful top byte
+  v32 e = _mm256_shuffle_epi8(d, p0); // inside each lane, everything is OK
+  v32 f = _mm256_permutevar8x32_epi32(e, p1); // move everything to the first lane
+  return _mm256_extract_epi64(f, 0); // get it
+}
+
+/*
+ * multiply 128 bits (actually only first 127) with the generator matrix of bch code
+ * in order to produce only 64 bits. the code distance is d=21.
+ * we then use the 128th bit as a parity extension bit to the code and get distance d=22
+ * input: array of 2 packed 64bit integers
+ * output: packed 64 bit integer
+ *
+ * we have 4 possible generator polynomials:
+ * [0, 2, 7, 8, 10, 12, 14, 15, 16, 23, 25, 27, 28, 30, 31, 32, 33, 37, 38, 39, 40, 41, 42, 44, 45, 48, 58, 61, 63]
+ * [0, 2, 5, 15, 18, 19, 21, 22, 23, 24, 25, 26, 30, 31, 32, 33, 35, 36, 38, 40, 47, 48, 49, 51, 53, 55, 56, 61, 63]
+ * [0, 1, 2, 3, 5, 8, 13, 17, 19, 21, 23, 27, 28, 32, 34, 35, 36, 39, 41, 43, 44, 50, 52, 54, 59, 60, 61, 62, 63]
+ * [0, 1, 2, 3, 4, 9, 11, 13, 19, 20, 22, 24, 27, 28, 29, 31, 35, 36, 40, 42, 44, 46, 50, 55, 58, 60, 61, 62, 63]
+ *
+ * no specific polynomial is preferable. so we choose the first one
+ */
+ const __v2di generatorBCHMatrix = {0xa40137e3da81d585, 0xa40137e3da81d585};
+uint64_t BCH128to64_clmul (const __v2di in) {
+  uint64_t parity = _mm_extract_epi64(in, 0);
+  __m128i t0 = _mm_clmulepi64_si128(in, generatorBCHMatrix, 0x00);
+  __m128i t1 = _mm_clmulepi64_si128(in, generatorBCHMatrix, 0x11);
+  __m128i p = t0 ^ _mm_shuffle_epi32(t1,  0x4e);
+  uint64_t low = _mm_extract_epi64(p, 0);
+  return low ^ -(parity & 1);
+}
+
+uint64_t BCH128to64 (const __v2di in) {
+  register uint64_t b1 = in[0];
+  register uint64_t res = b1;
+  res ^= (b1 << 2);
+  res ^= (b1 << 7);
+  res ^= (b1 << 8);
+  res ^= (b1 << 10);
+  res ^= (b1 << 12);
+  res ^= (b1 << 14);
+  res ^= (b1 << 15);
+  res ^= (b1 << 16);
+  res ^= (b1 << 23);
+  res ^= (b1 << 25);
+  res ^= (b1 << 27);
+  res ^= (b1 << 28);
+  res ^= (b1 << 30);
+  res ^= (b1 << 31);
+  res ^= (b1 << 32);
+  res ^= (b1 << 33);
+  res ^= (b1 << 37);
+  res ^= (b1 << 38);
+  res ^= (b1 << 39);
+  res ^= (b1 << 40);
+  res ^= (b1 << 41);
+  res ^= (b1 << 42);
+  res ^= (b1 << 44);
+  res ^= (b1 << 45);
+  res ^= (b1 << 48);
+  res ^= (b1 << 58);
+  res ^= (b1 << 61);
+  res ^= (b1 << 63);
+
+  register uint64_t b2 = in[1];
+  res ^= (b2 >> 62);
+  res ^= (b2 >> 57);
+  res ^= (b2 >> 56);
+  res ^= (b2 >> 54);
+  res ^= (b2 >> 52);
+  res ^= (b2 >> 50);
+  res ^= (b2 >> 49);
+  res ^= (b2 >> 48);
+  res ^= (b2 >> 41);
+  res ^= (b2 >> 39);
+  res ^= (b2 >> 37);
+  res ^= (b2 >> 36);
+  res ^= (b2 >> 34);
+  res ^= (b2 >> 33);
+  res ^= (b2 >> 32);
+  res ^= (b2 >> 31);
+  res ^= (b2 >> 27);
+  res ^= (b2 >> 26);
+  res ^= (b2 >> 25);
+  res ^= (b2 >> 24);
+  res ^= (b2 >> 23);
+  res ^= (b2 >> 22);
+  res ^= (b2 >> 20);
+  res ^= (b2 >> 19);
+  res ^= (b2 >> 16);
+  res ^= (b2 >> 6);
+  res ^= (b2 >> 3);
+  res ^= (b2 >> 1);
+
+  return res ^ ((uint64_t)(-(b2&1)));
+}
+
+static const vLog lmask = {0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f,
+                           0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f};
+static const v32 two_vector = v32_cst(2);
+
+static const vLog generatorPowersT1 = 
+{0x01, 0x03, 0x09, 0x1b, 0x51, 0xf2, 0xd6, 0x82, 0x87, 0x96, 0xc3, 0x4a, 0xdd, 0x97, 0xc6, 0x53, 
+ 0x01, 0x03, 0x09, 0x1b, 0x51, 0xf2, 0xd6, 0x82, 0x87, 0x96, 0xc3, 0x4a, 0xdd, 0x97, 0xc6, 0x53};
+
+static const vLog generatorPowersT2 =
+{0xff, 0xf6, 0x3e, 0x0, 0xee, 0x7e, 0x02, 0xde, 0xfd, 0x6, 0xbe, 0xfc, 0xe, 0x7f, 0xfa, 0x1e,
+ 0xff, 0xf6, 0x3e, 0x0, 0xee, 0x7e, 0x02, 0xde, 0xfd, 0x6, 0xbe, 0xfc, 0xe, 0x7f, 0xfa, 0x1e};
+
+void exponentiate_ssse3(const vLog *Log, v32 *Coef) {
+
+// This is slightly faster because everything is parallelized
+  for (int i = 0; i < 4; ++i) {
+    // get low 4 bits of each log
+    vLog low = Log[i] & lmask;
+    
+    // 32x parallel 4-bit table lookup
+    vLog x = _mm256_shuffle_epi8(generatorPowersT1, low);
+
+    // shift right by 4 bits (no instruction with 8-bit words; use 32-bit words)
+    vLog high = _mm256_srli_epi16(Log[i], 4) & lmask;
+
+    // 32x parallel 4-bit table lookup
+    vLog y = _mm256_shuffle_epi8(generatorPowersT2, high);
+   
+    // multiplier ensemble x et y --> attention ça va produire 2 vecteurs + sign-extend
+    __m128i xbot = _mm256_extractf128_si256(x, 0);
+    __m128i ybot = _mm256_extractf128_si256(y, 0);
+    v32 xbot_signed = _mm256_cvtepi8_epi16(xbot);
+    v32 ybot_signed = _mm256_cvtepi8_epi16(ybot);  
+    v32 ybot_p2 = ybot_signed + two_vector;
+    v32 pbot = xbot_signed * ybot_p2;
+    Coef[2*i] = REDUCE_FULL(pbot);
+
+    __m128i xtop = _mm256_extractf128_si256(x, 1);
+    __m128i ytop = _mm256_extractf128_si256(y, 1);
+    v32 xtop_signed = _mm256_cvtepi8_epi16(xtop);
+    v32 ytop_signed = _mm256_cvtepi8_epi16(ytop);
+    v32 ytop_p2 = ytop_signed + two_vector;
+    Coef[2*i+1] = REDUCE_FULL(xtop_signed * ytop_p2);
+  }
+}

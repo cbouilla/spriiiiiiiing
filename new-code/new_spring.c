@@ -8,6 +8,7 @@
 #include "vector.c"
 #include "vector.h"
 
+
 v16 A[16];
 v16 S_Eval[64][2][16];
 //v16 Sinv_Eval[64][16];
@@ -34,9 +35,14 @@ const v16 omegaPowers[16] = {
 
 
 const v16 NULL_VECT = {0, 0, 0, 0, 0, 0, 0, 0};
+const v16 VECT128 = {128, 128, 128, 128, 128, 128, 128, 128};
 
+//const v16 VECT_M2BITS ={0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0};
 
 #define N_BYTES 320000000
+#define N_BITS 4
+
+
 
 /* #define v16_cmp_eq   __builtin_ia32_pcmpeqw128 */
 /* #define v16_movemask(x)   __builtin_ia32_pmovmskb128((v8) x) */
@@ -47,21 +53,74 @@ const v16 NULL_VECT = {0, 0, 0, 0, 0, 0, 0, 0};
 
 // Find out if a sample (v16) is invalid (i.e. if the vector has one (or more) coefficient equal to 0).
 
-#define REJECTION_MASK(x) (v16_mask(v16_nulcoef(x)))
+#define REJECTION_MASK0(x)   (v16_mask(v16_nulcoef(x)))
+#define REJECTION_MASK128(x) (v16_mask(v16_cmp_eq(x,VECT128)))
 
 // Rounding of a v16 vector:
 
-#define ROUNDING_MASK(x)  (v16_mask(v16_pcoef(x)))
+#define ROUNDING_MASK1(x)  (v16_mask(v16_pcoef(x)))
 
 #define half_bits_w(x)    (x&0x5555)
 #define weak_bits8(x)     (x&0xff)
 #define bits_shift_r(x,i) (x>>i)
 #define bits_shift_l(x,i) (x<<i)
 #define arranged_mask(x)  (bits_shift_r(half_bits_w(x), 7)^(weak_bits8(half_bits_w(x))))
-#define ROUNDING(x)       (arranged_mask(ROUNDING_MASK(x)))
+#define ROUNDING1(x)       (arranged_mask(ROUNDING_MASK1(x)))
 
+#define ROUNDING_MASK2(x)  (x&0xc0)
+#define ROUNDING_MASK3(x)  (x&0xe0)
+#define ROUNDING_MASK4(x)  (x&0xf0)
 
+// Rouding in case we return 2 bits :
+unsigned char RoundingWith2Bits(v16 a){
+v16 x=ROUNDING_MASK2(a);
+unsigned char output;
 
+ output =x[0];
+ output ^=x[1]>>2;
+ output ^=x[2]>>4;
+ output ^=x[3]>>6;
+ output ^=x[4];
+ output ^=x[5]>>2;
+ output ^=x[6]>>4;
+ output ^=x[7]>>6;
+
+ return output;
+}
+
+// Rounding in case we return 3 bits :
+unsigned char RoundingWith3Bits(v16 a){
+  v16 x=ROUNDING_MASK3(a);
+ unsigned char output;
+
+  output = x[0];
+  output ^= x[1]>>3;
+  output ^= (x[2]>>6)^(x[2]<<2);
+  output ^= x[3]>>1;
+  output ^= x[4]>>4;
+  output ^= (x[5]>>7)^(x[5]<<1);
+  output ^= x[6]>>2;
+  output ^= x[7]>>5;
+  
+  return output;
+}
+
+// Rounding in case we return 4 bits :
+unsigned char RoundingWith4Bits(v16 a){
+  v16 x=ROUNDING_MASK4(a);
+ unsigned char output;
+
+  output = x[0];
+  output ^= x[1]>>4;
+  output ^= x[2];
+  output ^= x[3]>>4;
+  output ^= x[4];
+  output ^= x[5]>>4;
+  output ^= x[6];
+  output ^= x[7]>>4;
+
+  return output;  
+}
 
 // res <--- a * b   (polynômes sous formes évalués)
 void MultiplyPolyEval128(const v16 a[16], const v16 b[16], v16 res[16]) {
@@ -116,26 +175,27 @@ uint64_t UpdateCounterMode(uint64_t x, v16 Prod[16], const uint64_t Gray){
 }
 
 // renvoie le XOR de n_bytes octets de flux
-unsigned char GrayCounterMode(int n_bytes){
+unsigned char GrayCounterMode1(int n_bytes, int n_bits){
   v16 Poly[16], Prod[16];
   uint64_t x=0, Gray_counter=0;
   int count = 0;
 
   unsigned char FinalOutput = 0;
 
-
   // Setup
   for(int i=0; i < 16; i++){
     Prod[i] = A[i];
   }
 
+  switch (n_bits){
+  case 1 : 
   while(count < n_bytes) {
 
     // Extraction du flux
     ConvertEvalToCoefficients(Prod, Poly);
     for(int i = 0; i < 16; i++) {
-      if (REJECTION_MASK(Poly[i]) == 0) { //Perform Rejection-sampling.
-        FinalOutput ^= ROUNDING(Poly[i]);
+      if (REJECTION_MASK0(Poly[i]) == 0) { //Perform Rejection-sampling.
+        FinalOutput ^= ROUNDING1(Poly[i]);
         count++;
       }
     }
@@ -143,7 +203,86 @@ unsigned char GrayCounterMode(int n_bytes){
     x = UpdateCounterMode(x, Prod, Gray_counter);
     //MultiplyPolyEval128(Eval1, Eval2, Prod); // prod' = Prod(en fait Eval1) * Eval2
   }
+  break;
+  case 2 :
+    while(count < n_bytes){
+    
+    // Extraction du flux
+    ConvertEvalToCoefficients(Prod, Poly);
+    for(int i = 0; i < 16; i++) {
+      v16 x = Poly[i];
+      if (REJECTION_MASK128(x) == 0) { //Perform Rejection-sampling.
+        FinalOutput ^= x[0];
+	FinalOutput ^=x[1]>>2;
+	FinalOutput ^=x[2]>>4;
+	FinalOutput ^=x[3]>>6;
+	count++;
+	FinalOutput ^=x[4];
+	FinalOutput ^=x[5]>>2;
+	FinalOutput ^=x[6]>>4;
+	FinalOutput ^=x[7]>>6;
+        count++;
+      }
+    }
+    Gray_counter++;
+    x = UpdateCounterMode(x, Prod, Gray_counter);
+  }
+  break;
+  case 3 :
+    while(count < n_bytes){
+    
+    // Extraction du flux
+    ConvertEvalToCoefficients(Prod, Poly);
+    for(int i = 0; i < 16; i++) {
+      v16 x = Poly[i];
+      if (REJECTION_MASK128(x) == 0) { //Perform Rejection-sampling.
+        FinalOutput ^= x[0];
+	FinalOutput ^=x[1]>>3;
+	FinalOutput ^=(x[2]>>6)^(x[2]<<2);
+	count++;
+	FinalOutput ^=x[3]>>1;
+	FinalOutput ^=x[4]>>4;
+	FinalOutput ^=(x[5]>>7)^(x[5]<<1);
+	count++;
+	FinalOutput ^=x[6]>>2;
+	FinalOutput ^=x[7]>>5;
+        count++;
+      }
+    }
+    Gray_counter++;
+    x = UpdateCounterMode(x, Prod, Gray_counter);
+  }
+break;
 
+case 4 :
+  while(count < n_bytes){
+    // Extraction du flux
+    ConvertEvalToCoefficients(Prod, Poly);
+    for(int i = 0; i < 16; i++) {
+      v16 x = Poly[i];
+      if (REJECTION_MASK128(x) == 0) { //Perform Rejection-sampling.
+        FinalOutput ^= x[0];
+	FinalOutput ^=x[1]>>4;
+	count++;
+	FinalOutput ^=x[2];
+	FinalOutput ^=x[3]>>4;
+	count++;
+	FinalOutput ^=x[4];
+	FinalOutput ^=x[5]>>4;
+	count++;
+	FinalOutput ^=x[6];
+	FinalOutput ^=x[7]>>4;
+        count++;
+      }
+    }
+    Gray_counter++;
+    x = UpdateCounterMode(x, Prod, Gray_counter);
+  }
+break;
+ default :
+printf("Error number of returned bits : %d. Should be either 1, 2, 3 or 4", n_bits);
+break;
+  }
   return FinalOutput;
 }
 
@@ -181,7 +320,7 @@ int main(){
 
   uint64_t tsc = rdtsc();
 
-  unsigned char Output = GrayCounterMode(N_BYTES);
+  unsigned char Output = GrayCounterMode1(N_BYTES, N_BITS);
   
   tsc = rdtsc() - tsc;
 
