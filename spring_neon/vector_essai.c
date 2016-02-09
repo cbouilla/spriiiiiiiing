@@ -41,6 +41,7 @@ int main(){
   v16 a;
   v8 b;
   dsv8 tr;
+  sv32 c;
   int i, mask;
 
   for(i = 0; i < 8; i++){
@@ -64,14 +65,14 @@ int main(){
   /*   printf("tr0[%d] = %d ; tr1[%d] = %d\n", i, tr.val[0][i], i, tr.val[1][i]); */
   /* } */
 
-  //c = v16_add(a,b);
+  c = sv8_to_sv32(tr.val[0]);
 
   mask = v16_movemask(a);
 
-  printf("mask = %x", mask);
-  /* for(i = 0; i < 8; i++){ */
-  /*   printf("c[%d] = %d\n", i, c[i]); */
-  /* } */
+  printf("mask = %x\n", mask);
+  for(i = 0; i < 2; i++){
+    printf("c[%d] = %d\n", i, c[i]);
+  }
 
 }
 
