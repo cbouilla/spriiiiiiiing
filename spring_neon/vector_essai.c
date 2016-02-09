@@ -30,11 +30,11 @@ typedef int32x2_t sv32 __attribute__((aligned (16)));
 #define v8_transpose(x) vtrn_s8(v8_lside(x), v8_rside(x))
 
 
-#define v16_movemask(x) ({				      	\	
-dsv8 q0 = v8_transpose(v16_to_v8(x));				\
-sv32 q1 = vreinterpret_s32_s8(q0.val[0]);			\
-q1[0]|q1[1];							\
-})
+#define v16_movemask(x) ({			\
+      dsv8 q0 = v8_transpose(v16_to_v8(x));	\
+      sv32 q1 = vreinterpret_s32_s8(q0.val[0]);	\
+      q1[0]|q1[1];				\
+    })
 
 
 int main(){
