@@ -49,8 +49,8 @@ int main(){
     a[i] = 0;
   }
 
-  a[0] = 1;
-  a[7] = 1;
+  a[0] = 0xff;
+  a[7] = 0xff;
 
   b = v16_to_v8(a);
 
@@ -60,9 +60,9 @@ int main(){
 
   tr = v8_transpose(b);
 
-  for(i = 0; i < 8; i++){
-    printf("tr0[%d] = %d ; tr1[%d] = %d\n", i, tr.val[0][i], i, tr.val[1][i]);
-  }
+  /* for(i = 0; i < 8; i++){ */
+  /*   printf("tr0[%d] = %d ; tr1[%d] = %d\n", i, tr.val[0][i], i, tr.val[1][i]); */
+  /* } */
 
   //c = v16_add(a,b);
 
