@@ -47,7 +47,7 @@ int main(){
     a[i] = 0;
   }
 
-  a[0] = 0x0201;
+  a[0] = 0xffff;
   a[7] = 0xffff;
 
   b = v16_to_v8(a);
