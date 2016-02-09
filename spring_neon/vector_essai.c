@@ -71,7 +71,7 @@ int main(){
 
   printf("mask = %x\n", mask);
   for(i = 0; i < 2; i++){
-    printf("c[%d] = %d\n", i, c[i]);
+    printf("c[%d] = %x\n", i, c[i]);
   }
 
 }
