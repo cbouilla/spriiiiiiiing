@@ -5,7 +5,7 @@
 
 /* Twiddle tables */
 
-  static const union cv FFT64_Twiddle[] = {
+  static const v16 FFT64_Twiddle[] = {
     {{1,    2,    4,    8,   16,   32,   64,  128}},
     {{1,   60,    2,  120,    4,  -17,    8,  -34}},
     {{1,  120,    8,  -68,   64,  -30,   -2,   17}},
@@ -16,7 +16,7 @@
   };
 
 
-  static const union cv FFT128_Twiddle[] =  {
+  static const v16 FFT128_Twiddle[] =  {
     {{  1, -118,   46,  -31,   60,  116,  -67,  -61}},
     {{  2,   21,   92,  -62,  120,  -25,  123, -122}},
     {{  4,   42,  -73, -124,  -17,  -50,  -11,   13}},
@@ -28,7 +28,7 @@
   };
 
 
-  static const union cv FFT256_Twiddle[] =  {
+  static const v16 FFT256_Twiddle[] =  {
     {{   1,   41, -118,   45,   46,   87,  -31,   14}}, 
     {{  60, -110,  116, -127,  -67,   80,  -61,   69}}, 
     {{   2,   82,   21,   90,   92,  -83,  -62,   28}}, 
@@ -51,10 +51,11 @@
 static inline void fft128(void *a);
 void fft64(void *a);
 
+#define CV(x) {{x, x, x, x, x, x, x, x}}
 
-extern  const union cv V128;
-extern  const union cv V255;
-extern  const union cv V257;
+extern  const v16 V128 = CV(128);
+extern  const v16 V255 = CV(255);
+extern  const v16 V257 = CV(257);
 
 
 /*
@@ -62,14 +63,14 @@ extern  const union cv V257;
  * REDUCE(x) := (x&255) - (x>>8)
  */
 #define REDUCE(x)                               \
-  v16_sub(v16_and(x, V255.v16), v16_shift_r (x, 8))
+  v16_sub(v16_and(x, V255), v16_shift_r (x, 8))
 
 /*
  * Reduce from [-127; 383] to [-128; 128]
  * EXTRA_REDUCE_S(x) := x<=128 ? x : x-257
  */
 #define EXTRA_REDUCE_S(x)                       \
-  v16_sub(x, v16_and(V257.v16, v16_cmp(x, V128.v16)))
+  v16_sub(x, v16_and(V257, v16_cmp(x, V128)))
 
 /*
  * Reduce modulo 257; result is in [-128; 128]
