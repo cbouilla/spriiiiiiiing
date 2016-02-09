@@ -39,33 +39,29 @@ typedef int32x2_t sv32 __attribute__((aligned (16)));
 
 int main(){
   v16 a;
-  v8 b;
-  dsv8 tr;
+  sv8 b;
   sv32 c;
   int i, mask;
 
   for(i = 0; i < 8; i++){
     a[i] = 0;
+    b[i] = i;
   }
 
   a[0] = 0xffff;
   a[7] = 0xffff;
 
-  b = v16_to_v8(a);
 
   /* for(i = 0; i <16 ; i++){ */
   /*   printf("b[%d] = %d\n", i, b[i]); */
   /* } */
-
-  tr = v8_transpose(b);
-
 
 
   /* for(i = 0; i < 8; i++){ */
   /*   printf("tr0[%d] = %d ; tr1[%d] = %d\n", i, tr.val[0][i], i, tr.val[1][i]); */
   /* } */
 
-  c = sv8_to_sv32(tr.val[0]);
+  c = sv8_to_sv32(b);
 
   mask = v16_movemask(a);
 
