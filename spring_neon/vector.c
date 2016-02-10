@@ -252,13 +252,13 @@ void fft64(void *a) {
    * Multiply by twiddle factors
    */
 
-  X(1) = v16_mul(X(1), FFT64_Twiddle[0].v16);
-  X(2) = v16_mul(X(2), FFT64_Twiddle[1].v16);
-  X(3) = v16_mul(X(3), FFT64_Twiddle[2].v16);
-  X(4) = v16_mul(X(4), FFT64_Twiddle[3].v16);
-  X(5) = v16_mul(X(5), FFT64_Twiddle[4].v16);
-  X(6) = v16_mul(X(6), FFT64_Twiddle[5].v16);
-  X(7) = v16_mul(X(7), FFT64_Twiddle[6].v16);
+  X(1) = v16_mul(X(1), FFT64_Twiddle[0]);
+  X(2) = v16_mul(X(2), FFT64_Twiddle[1]);
+  X(3) = v16_mul(X(3), FFT64_Twiddle[2]);
+  X(4) = v16_mul(X(4), FFT64_Twiddle[3]);
+  X(5) = v16_mul(X(5), FFT64_Twiddle[4]);
+  X(6) = v16_mul(X(6), FFT64_Twiddle[5]);
+  X(7) = v16_mul(X(7), FFT64_Twiddle[6]);
 
   /*
    * Transpose the FFT state with a revbin order permutation
