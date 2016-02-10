@@ -57,6 +57,7 @@ int test_dit_butterfly(int k) {
   }
   for(int i = 0; i < 8; i++){
     if(a[i] !=  u[i] || b[i] != v[i]){
+      printf("a[%d] = %d vs %d; b[%d] = %d vs %d", i, a[i], u[i], i, b[i], v[i]);
       return 0;
     }
   }
@@ -65,5 +66,5 @@ int test_dit_butterfly(int k) {
 
 int main() {
   printf("parallel_reduce : %d\n", test_parallelreduce());
-  printf("butterfly : %d", test_dit_butterfly(2));
+  printf("butterfly : %d\n", test_dit_butterfly(2));
 }
