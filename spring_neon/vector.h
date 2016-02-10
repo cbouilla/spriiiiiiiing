@@ -35,8 +35,8 @@ static const v16 V257 = CV(257);
 #define v16_to_v8 vreinterpretq_s8_s16
 #define sv8_to_sv32 vreinterpret_s32_s8
 
-#define v16_cmpt_gt(a,b) vcgtq_s16(a,b)
-#define v16_cmpt_eq(a,b) vceqq_s16(a,b)
+#define v16_cmp_gt(a,b) vcgtq_s16(a,b)
+#define v16_cmp_eq(a,b) vceqq_s16(a,b)
 
 #define v8_lside vget_high_s8
 #define v8_rside vget_low_s8
