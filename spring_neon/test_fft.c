@@ -44,7 +44,7 @@ for(int i = 0; i < 8; i++) {
 	a = u;
 	b = v;
 
-	  DIT_BUTTERFLY(a, k); 
+	DIT_BUTTERFLY(u, v, k); 
 	//simulate the butterfly
 	    for(int i = 0; i < 8; i++){
 	      a[i] = a[i] + (b[i] << k);
