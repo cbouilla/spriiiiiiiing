@@ -34,7 +34,7 @@ int test_parallelreduce() {
 	return 1;
 }
 
-int test_dit_butterfly(i6 k) {
+int test_dit_butterfly(i16 k) {
   v16 u, v, a, b;
 
   for(int i = 0; i < 8; i++) {
