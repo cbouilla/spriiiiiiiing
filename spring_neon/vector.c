@@ -266,17 +266,8 @@ void fft64(void *a) {
    * This will make the full FFT_64 in order.
    */
 
-//#ifdef v16_interleave_inplace
 #define INTERLEAVE(i,j) v16_interleave_inplace(X(i), X(j))
-/* #else */
-/* #define INTERLEAVE(i,j)                          \ */
-/*   do {                                           \ */
-/*     v16 t1= X(i);                                \ */
-/*     v16 t2= X(j);                                \ */
-/*     X(i) = v16_interleavel(t1, t2);              \ */
-/*     X(j) = v16_interleaveh(t1, t2);              \ */
-/*   } while(0) */
-/* #endif */
+
 
   INTERLEAVE(0, 1);
   INTERLEAVE(2, 3);
@@ -363,3 +354,51 @@ void fft64(void *a) {
 
 }
 
+/*
+ * FFT128
+ * Input in [-128,383]
+ * Outut in [-128,128]
+ *
+ */
+static inline void fft128(void *a) {
+
+  int i;
+
+  // Temp space to help for interleaving in the end
+  v16 B[8];
+
+  v16 *A = (v16*) a;
+  //  v16 *Twiddle = (v16*)FFT128_Twiddle;
+
+  /* Size-2 butterflies */
+
+  for (i = 0; i<8; i++) {
+    B[i]   = v16_add(A[i], A[i+8]);
+    A[i+8] = v16_sub(A[i], A[i+8]);
+    A[i+8] = REDUCE_FULL_S(A[i+8]);
+    A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i].v16);
+    A[i+8] = REDUCE(A[i+8]);
+  }
+
+  B[3] = REDUCE(B[3]);
+  B[7] = REDUCE(B[7]);
+  fft64(B);
+  fft64(A+8);
+
+  /* Transpose (i.e. interleave) */
+
+//#ifdef v16_interleave_inplace
+  v16 *A1=A+8, *B1=B;
+  
+  for (i=0; i<8; i++) {
+    A[2*i]   = *(B1++);
+    A[2*i+1] = *(A1++);
+    v16_interleave_inplace(A[2*i],A[2*i+1]);
+  }
+/* #else */
+/*   for (i=0; i<8; i++) { */
+/*     A[2*i]   = v16_interleavel (B[i], A[i+8]); */
+/*     A[2*i+1] = v16_interleaveh (B[i], A[i+8]); */
+/*   } */
+/* #endif */
+}
