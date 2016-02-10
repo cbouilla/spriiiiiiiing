@@ -35,29 +35,30 @@ int test_parallelreduce() {
 int test_dit_butterfly(int k) {
   v16 u, v, a, b;
 
-for(int i = 0; i < 8; i++) {
-		u[i] = rand();
-		v[i] = rand();
-	}
-	u = REDUCE(u);
-	v = REDUCE(v);
-	a = u;
-	b = v;
+  for(int i = 0; i < 8; i++) {
+    u[i] = rand();
+    v[i] = rand();
+  }
+  u = REDUCE(u);
+  v = REDUCE(v);
+  a = u;
+  b = v;
 
-	DIT_BUTTERFLY(u, v, k); 
-	//simulate the butterfly
-	    for(int i = 0; i < 8; i++){
-	      a[i] = a[i] + (b[i] << k);
-	      b[i] = a[i] - 2 * (b[i] << k);
-	    }
-	    for(int i = 0; i < 8; i++){
-	      if(a[i] !=  u[i] || b[i] != v[i]){
-		return 0;
-	      }
-	    }
-
+  DIT_BUTTERFLY(u, v, k); 
+  //simulate the butterfly
+  for(int i = 0; i < 8; i++){
+    a[i] = a[i] + (b[i] << k);
+    b[i] = a[i] - 2 * (b[i] << k);
+  }
+  for(int i = 0; i < 8; i++){
+    if(a[i] !=  u[i] || b[i] != v[i]){
+      return 0;
+    }
+  }
+  return 1;
 }
 
 int main() {
   printf("parallel_reduce : %d\n", test_parallelreduce());
+  printf("butterfly : %d", test_dit_butterfly(2));
 }
