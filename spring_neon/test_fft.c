@@ -49,7 +49,7 @@ int test_dit_butterfly(int k) {
   // a = v16_shift_l(u, 2);
   //b = v16_shift_r(v, 2);
 
-  DIT_BUTTERFLY(u, v, k);
+  DIT_BUTTERFLY(u, v, 2);
   //simulate the butterfly
   for(int i = 0; i < 8; i++){
     a[i] = a[i] + (b[i] << k);
