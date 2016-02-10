@@ -48,11 +48,6 @@
   };
 
 
-  #define wn0 0
-  #define wn2 2
-  #define wn4 4
-  #define wn6 6
-
 /* static inline void fft128(void *a); */
  void fft64(void *a);
 
@@ -78,237 +73,95 @@
   EXTRA_REDUCE(REDUCE(x))
 
 
-#define DIF_BUTTERFLY(xi, xj,n)			\
-  do {						\
-    v16 u= xi;					\
-    v16 v= xj;					\
-    xi =  v16_add(u, v);			\
-    if (n)					\
-      xj = v16_shift_l(v16_sub(u, v), XCAT(wn, n));	\
-    else					\
-      xj = v16_sub(u, v);			\
+#define DO_REDUCE(i)                            \
+  X(i) = REDUCE(X(i))
+
+#define DO_REDUCE_FULL_S(i)                     \
+  do {                                          \
+    X(i) = REDUCE(X(i));                        \
+    X(i) = EXTRA_REDUCE(X(i));                \
   } while(0)
 
-#define DIT_BUTTERFLY(xi, xj, n)		      	\
-  do {					      	\
-      v16 u = xi;			       	\
-      v16 v = (n) ? v16_shift_l(xj, XCAT(wn,n)) : xj;	\
-       xi = v16_add(u, v);              	\
-       xj = v16_sub(u, v);              	\
-     } while(0)
+
+void dif_fft8(void *a) {
+  v16* const A = a;
+  register v16 X0, X1, X2, X3, X4, X5, X6, X7;
+
+#define X(i) X##i
+
+  X0 = A[0];
+  X1 = A[1];
+  X2 = A[2];
+  X3 = A[3];
+  X4 = A[4];
+  X5 = A[5];
+  X6 = A[6];
+  X7 = A[7];
 
 
-#define INTERLEAVE(u,v) v16_interleave_inplace(u, v)
+  /*
+   * Begin with 8 parallels DIF FFT_8
+   *
+   * FFT_8 using w=4 as 8th root of unity
+   *  Unrolled decimation in frequency (DIF) radix-2 NTT.
+   *  Output data is in revbin_permuted order.
+   */
 
+  #define wn0 0
+  #define wn1 2
+  #define wn2 4
+  #define wn3 6
 
-/*
- * FFT64
- * Input in [-128,383]
- *   Input[0,1,2,4,5,6] can be in [-256,383]
- * Output in [-128,128]
- *
- */
+#define BUTTERFLY(i,j,n)                                \
+  do {                                                  \
+    v16 u= X(i);                                        \
+    v16 v= X(j);                                        \
+    X(i) =  v16_add(u, v);                              \
+    if (n)                                              \
+      X(j) = v16_shift_l(v16_sub(u, v), XCAT(wn,n));  \
+    else                                                \
+      X(j) = v16_sub(u, v);                             \
+  } while(0)
 
-/* void fft64(void *a) { */
-
-/*   v16* const A = a; */
-
-/*   register v16 X0, X1, X2, X3, X4, X5, X6, X7; */
-
-/* #define X(i) X##i */
-
-/*   X0 = A[0]; */
-/*   X1 = A[1]; */
-/*   X2 = A[2]; */
-/*   X3 = A[3]; */
-/*   X4 = A[4]; */
-/*   X5 = A[5]; */
-/*   X6 = A[6]; */
-/*   X7 = A[7]; */
-
-/* #define DO_REDUCE(i)                            \ */
-/*   X(i) = REDUCE(X(i)) */
-
-/*   /\* */
-/*    * Begin with 8 parallels DIF FFT_8 */
-/*    * */
-/*    * FFT_8 using w=4 as 8th root of unity */
-/*    *  Unrolled decimation in frequency (DIF) radix-2 NTT. */
-/*    *  Output data is in revbin_permuted order. */
-/*    *\/ */
-
-
-
-/*   DIF_BUTTERFLY(X0, X4, 0); */
-/*   DIF_BUTTERFLY(X1, X5, 2); */
-/*   DIF_BUTTERFLY(X2, X6, 4); */
-/*   DIF_BUTTERFLY(X3, X7, 6); */
+  // outer layer
+  BUTTERFLY(0, 4, 0);
+  BUTTERFLY(1, 5, 1);
+  BUTTERFLY(2, 6, 2);
+  BUTTERFLY(3, 7, 3);
   
-/*   REDUCE(X5); */
-/*   REDUCE(X6); */
-/*   REDUCE(X7); */
+  DO_REDUCE(5);
+  DO_REDUCE(6);
+  DO_REDUCE(7);
   
-/*   DIF_BUTTERFLY(X0, X2, 0); */
-/*   DIF_BUTTERFLY(X4, X6, 0); */
-/*   DIF_BUTTERFLY(X1, X3, 4); */
-/*   DIF_BUTTERFLY(X5, X7, 4); */
+  // middle layer
+  BUTTERFLY(0, 2, 0);
+  BUTTERFLY(4, 6, 0);
+  BUTTERFLY(1, 3, 2);
+  BUTTERFLY(5, 7, 2);
   
-/*   DIF_BUTTERFLY(X0, X1, 0); */
-/*   DIF_BUTTERFLY(X2, X3, 0); */
-/*   DIF_BUTTERFLY(X4, X5, 0); */
-/*   DIF_BUTTERFLY(X6, X7, 0); */
+  // external layer
+  BUTTERFLY(0, 1, 0);
+  BUTTERFLY(2, 3, 0);
+  BUTTERFLY(4, 5, 0);
+  BUTTERFLY(6, 7, 0);
   
-/*   /\* We don't need to reduce X(0) *\/ */
-/*   REDUCE_FULL(X1); */
-/*   REDUCE_FULL(X2); */
-/*   REDUCE_FULL(X3); */
-/*   REDUCE_FULL(X4); */
-/*   REDUCE_FULL(X5); */
-/*   REDUCE_FULL(X6); */
-/*   REDUCE_FULL(X7); */
-    
-/* #undef BUTTERFLY */
-
-/*   /\* */
-/*    * Multiply by twiddle factors */
-/*    *\/ */
-
-/*   X1 = v16_mul(X1, FFT64_Twiddle[0].v16); */
-/*   X2 = v16_mul(X2, FFT64_Twiddle[1].v16); */
-/*   X3 = v16_mul(X3, FFT64_Twiddle[2].v16); */
-/*   X4 = v16_mul(X4, FFT64_Twiddle[3].v16); */
-/*   X5 = v16_mul(X5, FFT64_Twiddle[4].v16); */
-/*   X6 = v16_mul(X6, FFT64_Twiddle[5].v16); */
-/*   X7 = v16_mul(X7, FFT64_Twiddle[6].v16); */
-
-/*   /\* */
-/*    * Transpose the FFT state with a revbin order permutation */
-/*    * on the rows and the column. */
-/*    * This will make the full FFT_64 in order. */
-/*    *\/ */
-
-
-/*   INTERLEAVE(0, 1); */
-/*   INTERLEAVE(2, 3); */
-/*   INTERLEAVE(4, 5); */
-/*   INTERLEAVE(6, 7); */
-
-/*   INTERLEAVE(0, 2); */
-/*   INTERLEAVE(1, 3); */
-/*   INTERLEAVE(4, 6); */
-/*   INTERLEAVE(5, 7); */
-
-/*   INTERLEAVE(0, 4); */
-/*   INTERLEAVE(1, 5); */
-/*   INTERLEAVE(2, 6); */
-/*   INTERLEAVE(3, 7); */
-
-/* #undef INTERLEAVE */
-
-/*   /\* */
-/*    * Finish with 8 parallels DIT FFT_8 */
-/*    * */
-/*    * FFT_8 using w=4 as 8th root of unity */
-/*    *  Unrolled decimation in time (DIT) radix-2 NTT. */
-/*    *  Intput data is in revbin_permuted order. */
-/*    *\/ */
+  /* We don't need to reduce X(0) */
+  DO_REDUCE_FULL_S(1);
+  DO_REDUCE_FULL_S(2);
+  DO_REDUCE_FULL_S(3);
+  DO_REDUCE_FULL_S(4);
+  DO_REDUCE_FULL_S(5);
+  DO_REDUCE_FULL_S(6);
+  DO_REDUCE_FULL_S(7);
   
+  A[0] = X0;
+  A[1] = X1;
+  A[2] = X2;
+  A[3] = X3;
+  A[4] = X4;
+  A[5] = X5;
+  A[6] = X6;
+  A[7] = X7;
 
-/*   DO_REDUCE(0); */
-/*   DO_REDUCE(1); */
-/*   DO_REDUCE(2); */
-/*   DO_REDUCE(3); */
-/*   DO_REDUCE(4); */
-/*   DO_REDUCE(5); */
-/*   DO_REDUCE(6); */
-/*   DO_REDUCE(7); */
-  
-/*   DIT_BUTTERFLY(X0, X1, 0); */
-/*   DIT_BUTTERFLY(X2, X3, 0); */
-/*   DIT_BUTTERFLY(X4, X5, 0); */
-/*   DIT_BUTTERFLY(X6, X7, 0); */
-  
-/*   DIT_BUTTERFLY(X0, X2, 0); */
-/*   DIT_BUTTERFLY(X4, X6, 0); */
-/*   DIT_BUTTERFLY(X1, X3, 4); */
-/*   DIT_BUTTERFLY(X5, X7, 4); */
-  
-/*   DO_REDUCE(7); */
-  
-/*   DIT_BUTTERFLY(X0, X4, 0); */
-/*   DIT_BUTTERFLY(X1, X5, 2); */
-/*   DIT_BUTTERFLY(X2, X6, 4); */
-/*   DIT_BUTTERFLY(X3, X7, 6); */
-  
-/*   DO_REDUCE_FULL_S(0); */
-/*   DO_REDUCE_FULL_S(1); */
-/*   DO_REDUCE_FULL_S(2); */
-/*   DO_REDUCE_FULL_S(3); */
-/*   DO_REDUCE_FULL_S(4); */
-/*   DO_REDUCE_FULL_S(5); */
-/*   DO_REDUCE_FULL_S(6); */
-/*   DO_REDUCE_FULL_S(7); */
-  
-/* #undef BUTTERFLY */
-
-/*   A[0] = X0; */
-/*   A[1] = X1; */
-/*   A[2] = X2; */
-/*   A[3] = X3; */
-/*   A[4] = X4; */
-/*   A[5] = X5; */
-/*   A[6] = X6; */
-/*   A[7] = X7; */
-
-/* #undef X */
-
-/* } */
-
-/* /\* */
-/*  * FFT128 */
-/*  * Input in [-128,383] */
-/*  * Outut in [-128,128] */
-/*  * */
-/*  *\/ */
-/* static inline void fft128(void *a) { */
-
-/*   int i; */
-
-/*   // Temp space to help for interleaving in the end */
-/*   v16 B[8]; */
-
-/*   v16 *A = (v16*) a; */
-/*   //  v16 *Twiddle = (v16*)FFT128_Twiddle; */
-
-/*   /\* Size-2 butterflies *\/ */
-
-/*   for (i = 0; i<8; i++) { */
-/*     B[i]   = v16_add(A[i], A[i+8]); */
-/*     A[i+8] = v16_sub(A[i], A[i+8]); */
-/*     A[i+8] = REDUCE_FULL_S(A[i+8]); */
-/*     A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i].v16); */
-/*     A[i+8] = REDUCE(A[i+8]); */
-/*   } */
-
-/*   B[3] = REDUCE(B[3]); */
-/*   B[7] = REDUCE(B[7]); */
-/*   fft64(B); */
-/*   fft64(A+8); */
-
-/*   /\* Transpose (i.e. interleave) *\/ */
-
-/* #ifdef v16_interleave_inplace */
-/*   v16 *A1=A+8, *B1=B; */
-  
-/*   for (i=0; i<8; i++) { */
-/*     A[2*i]   = *(B1++); */
-/*     A[2*i+1] = *(A1++); */
-/*     v16_interleave_inplace(A[2*i],A[2*i+1]); */
-/*   } */
-/* #else */
-/*   for (i=0; i<8; i++) { */
-/*     A[2*i]   = v16_interleavel (B[i], A[i+8]); */
-/*     A[2*i+1] = v16_interleaveh (B[i], A[i+8]); */
-/*   } */
-/* #endif */
-/* } */
+  #undef BUTTERFLY
+}
