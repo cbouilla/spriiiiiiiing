@@ -72,14 +72,6 @@
 #define REDUCE_FULL(x)                        \
   EXTRA_REDUCE(REDUCE(x))
 
-#define DO_REDUCE(i)                            \
-  X(i) = REDUCE(X(i))
-
-#define DO_REDUCE_FULL_S(i)                     \
-  do {                                          \
-    X(i) = REDUCE(X(i));                        \
-    X(i) = EXTRA_REDUCE(X(i));                \
-  } while(0)
 
 #define DIF_BUTTERFLY(_u,_v,n)			\
   do {						\
@@ -101,6 +93,7 @@
      } while(0)
 
 
+#define INTERLEAVE(u,v) v16_interleave_inplace(u, v)
 
 
 /*
@@ -145,33 +138,33 @@
 /*   #define wn3 6 */
 
 
-/*   BUTTERFLY(0, 4, 0); */
-/*   BUTTERFLY(1, 5, 1); */
-/*   BUTTERFLY(2, 6, 2); */
-/*   BUTTERFLY(3, 7, 3); */
+/*   DIF_BUTTERFLY(X0, X4, 0); */
+/*   DIF_BUTTERFLY(X1, X5, 2); */
+/*   DIF_BUTTERFLY(X2, X6, 4); */
+/*   DIF_BUTTERFLY(X3, X7, 6); */
   
-/*   DO_REDUCE(5); */
-/*   DO_REDUCE(6); */
-/*   DO_REDUCE(7); */
+/*   REDUCE(X5); */
+/*   REDUCE(X6); */
+/*   REDUCE(X7); */
   
-/*   BUTTERFLY(0, 2, 0); */
-/*   BUTTERFLY(4, 6, 0); */
-/*   BUTTERFLY(1, 3, 2); */
-/*   BUTTERFLY(5, 7, 2); */
+/*   DIF_BUTTERFLY(X0, X2, 0); */
+/*   DIF_BUTTERFLY(X4, X6, 0); */
+/*   DIF_BUTTERFLY(X1, X3, 4); */
+/*   DIF_BUTTERFLY(X5, X7, 4); */
   
-/*   BUTTERFLY(0, 1, 0); */
-/*   BUTTERFLY(2, 3, 0); */
-/*   BUTTERFLY(4, 5, 0); */
-/*   BUTTERFLY(6, 7, 0); */
+/*   DIF_BUTTERFLY(X0, X1, 0); */
+/*   DIF_BUTTERFLY(X2, X3, 0); */
+/*   DIF_BUTTERFLY(X4, X5, 0); */
+/*   DIF_BUTTERFLY(X6, X7, 0); */
   
 /*   /\* We don't need to reduce X(0) *\/ */
-/*   DO_REDUCE_FULL_S(1); */
-/*   DO_REDUCE_FULL_S(2); */
-/*   DO_REDUCE_FULL_S(3); */
-/*   DO_REDUCE_FULL_S(4); */
-/*   DO_REDUCE_FULL_S(5); */
-/*   DO_REDUCE_FULL_S(6); */
-/*   DO_REDUCE_FULL_S(7); */
+/*   REDUCE_FULL(X1); */
+/*   REDUCE_FULL(X2); */
+/*   REDUCE_FULL(X3); */
+/*   REDUCE_FULL(X4); */
+/*   REDUCE_FULL(X5); */
+/*   REDUCE_FULL(X6); */
+/*   REDUCE_FULL(X7); */
     
 /* #undef BUTTERFLY */
 
@@ -179,13 +172,13 @@
 /*    * Multiply by twiddle factors */
 /*    *\/ */
 
-/*   X(1) = v16_mul(X(1), FFT64_Twiddle[0].v16); */
-/*   X(2) = v16_mul(X(2), FFT64_Twiddle[1].v16); */
-/*   X(3) = v16_mul(X(3), FFT64_Twiddle[2].v16); */
-/*   X(4) = v16_mul(X(4), FFT64_Twiddle[3].v16); */
-/*   X(5) = v16_mul(X(5), FFT64_Twiddle[4].v16); */
-/*   X(6) = v16_mul(X(6), FFT64_Twiddle[5].v16); */
-/*   X(7) = v16_mul(X(7), FFT64_Twiddle[6].v16); */
+/*   X1 = v16_mul(X1, FFT64_Twiddle[0].v16); */
+/*   X2 = v16_mul(X2, FFT64_Twiddle[1].v16); */
+/*   X3 = v16_mul(X3, FFT64_Twiddle[2].v16); */
+/*   X4 = v16_mul(X4, FFT64_Twiddle[3].v16); */
+/*   X5 = v16_mul(X5, FFT64_Twiddle[4].v16); */
+/*   X6 = v16_mul(X6, FFT64_Twiddle[5].v16); */
+/*   X7 = v16_mul(X7, FFT64_Twiddle[6].v16); */
 
 /*   /\* */
 /*    * Transpose the FFT state with a revbin order permutation */
@@ -193,17 +186,6 @@
 /*    * This will make the full FFT_64 in order. */
 /*    *\/ */
 
-/* #ifdef v16_interleave_inplace */
-/* #define INTERLEAVE(i,j) v16_interleave_inplace(X(i), X(j)) */
-/* #else */
-/* #define INTERLEAVE(i,j)                          \ */
-/*   do {                                           \ */
-/*     v16 t1= X(i);                                \ */
-/*     v16 t2= X(j);                                \ */
-/*     X(i) = v16_interleavel(t1, t2);              \ */
-/*     X(j) = v16_interleaveh(t1, t2);              \ */
-/*   } while(0) */
-/* #endif */
 
 /*   INTERLEAVE(0, 1); */
 /*   INTERLEAVE(2, 3); */
@@ -240,22 +222,22 @@
 /*   DO_REDUCE(6); */
 /*   DO_REDUCE(7); */
   
-/*   BUTTERFLY(0, 1, 0); */
-/*   BUTTERFLY(2, 3, 0); */
-/*   BUTTERFLY(4, 5, 0); */
-/*   BUTTERFLY(6, 7, 0); */
+/*   DIT_BUTTERFLY(X0, X1, 0); */
+/*   DIT_BUTTERFLY(X2, X3, 0); */
+/*   DIT_BUTTERFLY(X4, X5, 0); */
+/*   DIT_BUTTERFLY(X6, X7, 0); */
   
-/*   BUTTERFLY(0, 2, 0); */
-/*   BUTTERFLY(4, 6, 0); */
-/*   BUTTERFLY(1, 3, 2); */
-/*   BUTTERFLY(5, 7, 2); */
+/*   DIT_BUTTERFLY(X0, X2, 0); */
+/*   DIT_BUTTERFLY(X4, X6, 0); */
+/*   DIT_BUTTERFLY(X1, X3, 4); */
+/*   DIT_BUTTERFLY(X5, X7, 4); */
   
 /*   DO_REDUCE(7); */
   
-/*   BUTTERFLY(0, 4, 0); */
-/*   BUTTERFLY(1, 5, 1); */
-/*   BUTTERFLY(2, 6, 2); */
-/*   BUTTERFLY(3, 7, 3); */
+/*   DIT_BUTTERFLY(X0, X4, 0); */
+/*   DIT_BUTTERFLY(X1, X5, 2); */
+/*   DIT_BUTTERFLY(X2, X6, 4); */
+/*   DIT_BUTTERFLY(X3, X7, 6); */
   
 /*   DO_REDUCE_FULL_S(0); */
 /*   DO_REDUCE_FULL_S(1); */
