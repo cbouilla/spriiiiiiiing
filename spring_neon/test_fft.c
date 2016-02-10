@@ -49,11 +49,11 @@ int test_dit_butterfly(int k) {
   // a = v16_shift_l(u, 2);
   //b = v16_shift_r(v, 2);
 
-  DIF_BUTTERFLY(u, v, cste);
+  DIT_BUTTERFLY(u, v, k);
   //simulate the butterfly
   for(int i = 0; i < 8; i++){
-    a[i] = a[i] + b[i];
-    b[i] = a[i] - b[i] - (b[i] << cste);
+    a[i] = a[i] + (b[i] << k);
+    b[i] = a[i] - 2 *(b[i] << k);
   }
   for(int i = 0; i < 8; i++){
     if(a[i] !=  u[i] || b[i] != v[i]){
