@@ -64,7 +64,7 @@
  * EXTRA_REDUCE_S(x) := x<=128 ? x : x-257
  */
 #define EXTRA_REDUCE(x)                       \
-  v16_sub(x, v16_and(V257, v16_cmp(x, V128)))
+  v16_sub(x, v16_and(V257, v16_cmp_gt(x, V128)))
 
 /*
  * Reduce modulo 257; result is in [-128; 128]
