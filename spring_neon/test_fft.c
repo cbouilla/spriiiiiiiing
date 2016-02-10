@@ -43,8 +43,12 @@ int test_dit_butterfly(int k) {
   }
   u = REDUCE(u);
   v = REDUCE(v);
-  a = u;
-  b = v;
+
+  for(int i = 0; i < 8; i++){
+    a[i] = u[i];
+    b[i] = v[i];
+    printf("a[%d] = %d, b[%d] = %d\n", i, a[i], b[i]);
+  }
 
   // a = v16_shift_l(u, 2);
   //b = v16_shift_r(v, 2);
@@ -56,8 +60,6 @@ int test_dit_butterfly(int k) {
     b[i] = a[i] - 2 *(b[i] << 2);
   }
 
-  a = REDUCE(a);
-  b = REDUCE(b);
 
   for(int i = 0; i < 8; i++){
     if(a[i] !=  u[i] || b[i] != v[i]){
