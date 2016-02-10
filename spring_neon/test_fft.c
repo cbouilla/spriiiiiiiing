@@ -3,7 +3,9 @@
 #include <inttypes.h>
 #include <assert.h>
             
-#define K 64            
+#define K 64
+const int cste = 2;
+            
 #include "vector.c"
 
 typedef short int i16;
@@ -32,7 +34,7 @@ int test_parallelreduce() {
 	return 1;
 }
 
-int test_dit_butterfly(int k) {
+int test_dit_butterfly() {
   v16 u, v, a, b;
 
   for(int i = 0; i < 8; i++) {
@@ -44,11 +46,11 @@ int test_dit_butterfly(int k) {
   a = u;
   b = v;
 
-  DIT_BUTTERFLY(u, v, k); 
+  DIT_BUTTERFLY(u, v, cste); 
   //simulate the butterfly
   for(int i = 0; i < 8; i++){
-    a[i] = a[i] + (b[i] << k);
-    b[i] = a[i] - 2 * (b[i] << k);
+    a[i] = a[i] + (b[i] << cste);
+    b[i] = a[i] - 2 * (b[i] << cste);
   }
   for(int i = 0; i < 8; i++){
     if(a[i] !=  u[i] || b[i] != v[i]){
@@ -60,5 +62,5 @@ int test_dit_butterfly(int k) {
 
 int main() {
   printf("parallel_reduce : %d\n", test_parallelreduce());
-  printf("butterfly : %d", test_dit_butterfly(2));
+  printf("butterfly : %d", test_dit_butterfly());
 }
