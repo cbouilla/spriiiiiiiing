@@ -79,7 +79,7 @@
     v16 v= _v;					\
     _u =  v16_add(u, v);			\
     if (n)					\
-      _v = v16_shift_l(v16_sub(u, v), CV(n));	\
+      _v = v16_shift_l(v16_sub(u, v), n);	\
     else					\
       _v = v16_sub(u, v);			\
   } while(0)
@@ -87,7 +87,7 @@
 #define DIT_BUTTERFLY(_u,_v,n)		      	\
   do {					      	\
       v16 u= _u;			       	\
-      v16 v= (n) ? v16_shift_l(_v, CV(n)) : _v;	\
+      v16 v= (n) ? v16_shift_l(_v, n) : _v;	\
        _u = v16_add(u, v);              	\
        _v = v16_sub(u, v);              	\
      } while(0)

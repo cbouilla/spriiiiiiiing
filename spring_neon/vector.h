@@ -29,8 +29,8 @@ static const v16 V257 = CV(257);
 #define v16_mul vmulq_s16
 #define v16_neg vnegq_s16
 
-#define v16_shift_r  vshrq_n_s16
-#define v16_shift_l  vshlq_n_s16
+#define v16_shift_r(a,k)  vreinterpretq_s16_u16(vqshruq_n_s16(a,k))
+#define v16_shift_l(a,k)  vreinterpretq_s16_u16(vqshluq_n_s16(a,k))
 
 #define v16_to_v8 vreinterpretq_s8_s16
 #define sv8_to_sv32 vreinterpret_s32_s8
