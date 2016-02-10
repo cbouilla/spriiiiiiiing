@@ -52,12 +52,16 @@ int test_dit_butterfly(int k) {
   DIT_BUTTERFLY(u, v, 2);
   //simulate the butterfly
   for(int i = 0; i < 8; i++){
-    a[i] = a[i] + (b[i] << k);
-    b[i] = a[i] - 2 *(b[i] << k);
+    a[i] = a[i] + (b[i] << 2);
+    b[i] = a[i] - 2 *(b[i] << 2);
   }
+
+  a = REDUCE(a);
+  b = REDUCE(b);
+
   for(int i = 0; i < 8; i++){
     if(a[i] !=  u[i] || b[i] != v[i]){
-      printf("a[%d] = %d vs %d; b[%d] = %d vs %d", i, a[i], u[i], i, b[i], v[i]);
+      printf("a[%d] = %d vs %d; b[%d] = %d vs %d\n", i, a[i], u[i], i, b[i], v[i]);
       return 0;
     }
   }
