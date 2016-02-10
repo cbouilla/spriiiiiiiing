@@ -14,11 +14,11 @@ typedef int8x8x2_t dsv8 __attribute__ ((aligned (16)));
 typedef int32x2_t sv32 __attribute__((aligned (16)));
 
 
-#define CV(x) {{x, x, x, x, x, x, x, x}}
+#define CV(x) {x, x, x, x, x, x, x, x}
 
-static  const v16 V128 = CV(128);
-static  const v16 V255 = CV(255);
-static  const v16 V257 = CV(257);
+static const v16 V128 = CV(128);
+static const v16 V255 = CV(255);
+static const v16 V257 = CV(257);
 
 #define v16_and vandq_s16
 #define v16_or  vorrq_s16

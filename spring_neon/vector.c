@@ -63,14 +63,14 @@
  * Reduce from [-127; 383] to [-128; 128]
  * EXTRA_REDUCE_S(x) := x<=128 ? x : x-257
  */
-#define EXTRA_REDUCE_S(x)                       \
+#define EXTRA_REDUCE(x)                       \
   v16_sub(x, v16_and(V257, v16_cmp(x, V128)))
 
 /*
  * Reduce modulo 257; result is in [-128; 128]
  */
-#define REDUCE_FULL_S(x)                        \
-  EXTRA_REDUCE_S(REDUCE(x))
+#define REDUCE_FULL(x)                        \
+  EXTRA_REDUCE(REDUCE(x))
 
 #define DO_REDUCE(i)                            \
   X(i) = REDUCE(X(i))
@@ -78,7 +78,7 @@
 #define DO_REDUCE_FULL_S(i)                     \
   do {                                          \
     X(i) = REDUCE(X(i));                        \
-    X(i) = EXTRA_REDUCE_S(X(i));                \
+    X(i) = EXTRA_REDUCE(X(i));                \
   } while(0)
 
 
