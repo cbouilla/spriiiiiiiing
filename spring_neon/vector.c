@@ -49,7 +49,7 @@
 
 
 /* static inline void fft128(void *a); */
-/* void fft64(void *a); */
+ void fft64(void *a);
 
 
 /*
@@ -81,14 +81,35 @@
     X(i) = EXTRA_REDUCE(X(i));                \
   } while(0)
 
+#define DIF_BUTTERFLY(_u,_v,n)                                \
+  do {                                                  \
+    v16 u= _u;                                        \
+    v16 v= _v;                                        \
+    _u =  v16_add(u, v);                              \
+    if (n)                                              \
+      _v = v16_shift_l(v16_sub(u, v), n);	\
+    else                                                \
+      _v = v16_sub(u, v);                             \
+  } while(0)
 
-/* /\\* */
-/*  * FFT64 */
-/*  * Input in [-128,383] */
-/*  *   Input[0,1,2,4,5,6] can be in [-256,383] */
-/*  * Output in [-128,128] */
-/*  * */
-/*  *\/ */
+#define DIT_BUTTERFLY(_u,_v,n)                                \
+  do {                                                  \
+    v16 u= _u;                                        \
+    v16 v= (n) ? v16_shift_l(_v, n) : _v;		\	
+    _u = v16_add(u, v);                               \
+    _v = v16_sub(u, v);                               \
+  } while(0)
+
+
+
+
+/*
+ * FFT64
+ * Input in [-128,383]
+ *   Input[0,1,2,4,5,6] can be in [-256,383]
+ * Output in [-128,128]
+ *
+ */
 
 /* void fft64(void *a) { */
 
@@ -123,16 +144,6 @@
 /*   #define wn2 4 */
 /*   #define wn3 6 */
 
-/* #define BUTTERFLY(i,j,n)                                \ */
-/*   do {                                                  \ */
-/*     v16 u= X(i);                                        \ */
-/*     v16 v= X(j);                                        \ */
-/*     X(i) =  v16_add(u, v);                              \ */
-/*     if (n)                                              \ */
-/*       X(j) = v16_shift_l(v16_sub(u, v), XCAT(wn,n));	\ */
-/*     else                                                \ */
-/*       X(j) = v16_sub(u, v);                             \ */
-/*   } while(0) */
 
 /*   BUTTERFLY(0, 4, 0); */
 /*   BUTTERFLY(1, 5, 1); */
@@ -219,15 +230,6 @@
 /*    *  Intput data is in revbin_permuted order. */
 /*    *\/ */
   
-/* #define BUTTERFLY(i,j,n)                                \ */
-/*   do {                                                  \ */
-/*     v16 u= X(i);                                        \ */
-/*     v16 v= X(j);                                        \ */
-/*     if (n)                                              \ */
-/*       v = v16_shift_l(v, XCAT(wn,n));			\ */
-/*     X(i) = v16_add(u, v);                               \ */
-/*     X(j) = v16_sub(u, v);                               \ */
-/*   } while(0) */
 
 /*   DO_REDUCE(0); */
 /*   DO_REDUCE(1); */
