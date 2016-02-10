@@ -13,6 +13,8 @@ typedef int8x8_t sv8 __attribute__ ((aligned (16)));
 typedef int8x8x2_t dsv8 __attribute__ ((aligned (16)));
 typedef int32x2_t sv32 __attribute__((aligned (16)));
 
+
+
 #define v16_and vandq_s16
 #define v16_or  vorrq_s16
 #define v16_xor veorq_s16
