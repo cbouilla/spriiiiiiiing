@@ -73,23 +73,23 @@
   EXTRA_REDUCE(REDUCE(x))
 
 
-#define DIF_BUTTERFLY(_u,_v,n)			\
+#define DIF_BUTTERFLY(xi, xj,n)			\
   do {						\
-    v16 u= _u;					\
-    v16 v= _v;					\
-    _u =  v16_add(u, v);			\
+    v16 u= xi;					\
+    v16 v= xj;					\
+    xi =  v16_add(u, v);			\
     if (n)					\
-      _v = v16_shift_l(v16_sub(u, v), n);	\
+      xj = v16_shift_l(v16_sub(u, v), n);	\
     else					\
-      _v = v16_sub(u, v);			\
+      xj = v16_sub(u, v);			\
   } while(0)
 
-#define DIT_BUTTERFLY(_u,_v,n)		      	\
+#define DIT_BUTTERFLY(xi, xj, n)		      	\
   do {					      	\
-      v16 u= _u;			       	\
-      v16 v= (n) ? v16_shift_l(_v, n) : _v;	\
-       _u = v16_add(u, v);              	\
-       _v = v16_sub(u, v);              	\
+      v16 u = xi;			       	\
+      v16 v = (n) ? v16_shift_l(xj, n) : xj;	\
+       xi = v16_add(u, v);              	\
+       xj = v16_sub(u, v);              	\
      } while(0)
 
 
