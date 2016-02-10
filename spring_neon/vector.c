@@ -48,6 +48,11 @@
   };
 
 
+  #define wn0 0
+  #define wn2 2
+  #define wn4 4
+  #define wn6 6
+
 /* static inline void fft128(void *a); */
  void fft64(void *a);
 
@@ -79,7 +84,7 @@
     v16 v= xj;					\
     xi =  v16_add(u, v);			\
     if (n)					\
-      xj = v16_shift_l(v16_sub(u, v), n);	\
+      xj = v16_shift_l(v16_sub(u, v), XCAT(wn, n));	\
     else					\
       xj = v16_sub(u, v);			\
   } while(0)
@@ -87,7 +92,7 @@
 #define DIT_BUTTERFLY(xi, xj, n)		      	\
   do {					      	\
       v16 u = xi;			       	\
-      v16 v = (n) ? v16_shift_l(xj, n) : xj;	\
+      v16 v = (n) ? v16_shift_l(xj, XCAT(wn,n)) : xj;	\
        xi = v16_add(u, v);              	\
        xj = v16_sub(u, v);              	\
      } while(0)
@@ -132,10 +137,6 @@
 /*    *  Output data is in revbin_permuted order. */
 /*    *\/ */
 
-/*   #define wn0 0 */
-/*   #define wn1 2 */
-/*   #define wn2 4 */
-/*   #define wn3 6 */
 
 
 /*   DIF_BUTTERFLY(X0, X4, 0); */
