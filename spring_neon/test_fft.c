@@ -34,7 +34,7 @@ int test_parallelreduce() {
 	return 1;
 }
 
-int test_dit_butterfly(i16 k) {
+int test_dit_butterfly(int k) {
   v16 u, v, a, b;
 
   for(int i = 0; i < 8; i++) {
@@ -46,8 +46,8 @@ int test_dit_butterfly(i16 k) {
   a = u;
   b = v;
 
-  a = v16_shift_l(u, k);
-  b = v16_shift_r(v, k);
+  a = v16_shift_l(u, 2);
+  b = v16_shift_r(v, 2);
 
   /* DIF_BUTTERFLY(u, v, cste);  */
   /* //simulate the butterfly */
