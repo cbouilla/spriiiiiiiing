@@ -84,10 +84,15 @@
 
 
 void dif_fft8(void *a) {
+  printf("DEBUG L87\n");
   v16* const A = a;
   register v16 X0, X1, X2, X3, X4, X5, X6, X7;
 
+  printf("DEBUG L90\n");
+
 #define X(i) X##i
+
+  printf("DEBUG L94\n");
 
   X0 = A[0];
   X1 = A[1];
@@ -98,7 +103,6 @@ void dif_fft8(void *a) {
   X6 = A[6];
   X7 = A[7];
 
-  printf("DEBUG L101\n");
 
   /*
    * Begin with 8 parallels DIF FFT_8
@@ -130,7 +134,7 @@ void dif_fft8(void *a) {
   BUTTERFLY(2, 6, 2);
   BUTTERFLY(3, 7, 3);
 
-  printf("DEBUG L102\n");
+
   
   DO_REDUCE(5);
   DO_REDUCE(6);
@@ -143,15 +147,12 @@ void dif_fft8(void *a) {
   BUTTERFLY(5, 7, 2);
   
 
-  printf("DEBUG L103\n");
 
   // external layer
   BUTTERFLY(0, 1, 0);
   BUTTERFLY(2, 3, 0);
   BUTTERFLY(4, 5, 0);
   BUTTERFLY(6, 7, 0);
-
-  printf("DEBUG L104\n");
   
   /* We don't need to reduce X(0) */
   DO_REDUCE_FULL_S(1);

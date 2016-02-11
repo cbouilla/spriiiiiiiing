@@ -39,13 +39,11 @@ int revbin8[] = {0, 4, 2, 6, 1, 5, 3, 7};
 int test_fft8(int width, i16 omega) {
 	i16 *A = malloc(8 * width * sizeof(i16));
 	i16 *B = malloc(8 * width * sizeof(i16));
-	printf("DEBUG : test L42\n");
 	// initialise un tableau pseudo-aléatoire
 	for(int i = 0; i < 8*width; i++) {
 		A[i] = reduce(5*i ^ 17*i ^ 42);
 	}
 
-	printf("DEBUG : test L48\n");
 	// calcule les [width] FFTs parallèles en O(width * N^2).
 	// B[i] = sum(A[j] * (omega^i)^j, i=0..127)
 	for(int w=0; w<width; w++) {
@@ -61,11 +59,10 @@ int test_fft8(int width, i16 omega) {
 		}
 	}
 
-	printf("DEBUG test L64\n");
 	// check
 	dif_fft8(A);
         
-	printf("DEBUG test L68\n");
+        
 	// Output is in revbin order 
 	for(int i=0; i<8; i++) {
 	  for(int j=0; j<width; j++){
