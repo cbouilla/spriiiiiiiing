@@ -43,7 +43,7 @@ v16 rand_v16() {
       x[j] = rand();
     } while(x[j]==0);
   }
-  return REDUCE_FULL_S(x);
+  return REDUCE_FULL(x);
 }
 
 // méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
