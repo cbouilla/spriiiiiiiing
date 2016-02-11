@@ -78,6 +78,6 @@ int test_fft8(int width, i16 omega) {
 
 int main() {
   printf("parallel_reduce : %d\n", test_parallelreduce());
-  printf("fft128 : %d\n", test_fft128(1,42));
+  printf("dif_fft8 : %d\n", test_fft8(16,4));
   return 0; 
 }

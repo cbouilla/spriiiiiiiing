@@ -366,78 +366,28 @@ static inline void fft128(void *a) {
 
   // Temp space to help for interleaving in the end
   v16 B[8];
-  v16 *A = a;
 
-  register v16 X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15;
-
- X0 = A[0];
-  X1 = A[1];
-  X2 = A[2];
-  X3 = A[3];
-  X4 = A[4];
-  X5 = A[5];
-  X6 = A[6];
-  X7 = A[7];
- X8 = A[8];
-  X9 = A[9];
-  X10 = A[10];
-  X11 = A[11];
-  X12 = A[12];
-  X13 = A[13];
-  X14 = A[14];
-  X15 = A[15];
- 
+  v16 *A = (v16*) a;
   //  v16 *Twiddle = (v16*)FFT128_Twiddle;
 
   /* Size-2 butterflies */
-  /* for (i = 0; i<8; i++) { */
-  /*   B[i]   = v16_add(X(i), X(i+8)); */
-  /*   printf("B[%d][0] = %d\n", i, B[i][0]); */
-  /*   A[i+8] = v16_sub(A[i], A[i+8]); */
-  /*   A[i+8] = REDUCE_FULL(A[i+8]); */
-  /*   A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i]); */
-  /*   A[i+8] = REDUCE(A[i+8]); */
-  /* } */
 
-  /* B[3] = REDUCE(B[3]); */
-  /* B[7] = REDUCE(B[7]); */
+  for (i = 0; i<8; i++) {
+    B[i]   = v16_add(A[i], A[i+8]);
+    A[i+8] = v16_sub(A[i], A[i+8]);
+    A[i+8] = REDUCE_FULL_S(A[i+8]);
+    A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i]);
+    A[i+8] = REDUCE(A[i+8]);
+  }
 
-#define BUTTERFLY_AND_TWIDDLE(i,j)                                \
-  do {                                                  \
-    v16 u= X(i);                                        \
-    v16 v= X(j);                                        \                       
-    X(i) = v16_add(u, v);                               \
-    X(j) = v16_sub(u, v);                               \
-    x(j) = REDUCE_FULL(X(j));                           \
-    X(j) = v16_mul(X(j), FFT128_Twiddle[i]);		\
-    X(j) = REDUCE(X(j));                                \
-} while(0)
-
-      
-    BUTTERFLY_AND_TWIDDLE(0,8);
-    BUTTERFLY_AND_TWIDDLE(1,9);
-    BUTTERFLY_AND_TWIDDLE(2,10);
-    BUTTERFLY_AND_TWIDDLE(3,11);
-    BUTTERFLY_AND_TWIDDLE(4,12);
-    BUTTERFLY_AND_TWIDDLE(5,13);
-    BUTTERFLY_AND_TWIDDLE(6,14);
-    BUTTERFLY_AND_TWIDDLE(7,15);
-
-B[0] = X0;
-B[1] = X1;
-B[2] = X2;
-B[3] = X3;
-B[4] = X4;
-B[5] = X5;
-B[6] = X6;
-B[7] = X7;
-
+  B[3] = REDUCE(B[3]);
+  B[7] = REDUCE(B[7]);
   fft64(B);
   fft64(A+8);
 
   /* Transpose (i.e. interleave) */
 
-//#ifdef v16_interleave_inplace
+#ifdef v16_interleave_inplace
   v16 *A1=A+8, *B1=B;
   
   for (i=0; i<8; i++) {
@@ -445,10 +395,5 @@ B[7] = X7;
     A[2*i+1] = *(A1++);
     v16_interleave_inplace(A[2*i],A[2*i+1]);
   }
-/* #else */
-/*   for (i=0; i<8; i++) { */
-/*     A[2*i]   = v16_interleavel (B[i], A[i+8]); */
-/*     A[2*i+1] = v16_interleaveh (B[i], A[i+8]); */
-/*   } */
-/* #endif */
+
 }
