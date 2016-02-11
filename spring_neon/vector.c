@@ -368,7 +368,7 @@ static inline void fft128(void *a) {
   v16 B[8];
   v16 *A = a;
 
-  printf("A[0][0] = %d\n", A[0][0]);
+  printf("A[0][0] = %d\n", A[8][0]);
  
   //  v16 *Twiddle = (v16*)FFT128_Twiddle;
 
