@@ -37,8 +37,10 @@ int test_parallelreduce() {
 int revbin8[] = {0, 4, 2, 6, 1, 5, 3, 7};
 
 int test_fft8(int width, i16 omega) {
-	i16 *A = malloc(8 * width * sizeof(i16));
-	i16 *B = malloc(8 * width * sizeof(i16));
+	/* i16 *A = malloc(8 * width * sizeof(i16)); */
+	/* i16 *B = malloc(8 * width * sizeof(i16)); */
+  i16 A[8*width];
+  i16 B[8*width];
 	// initialise un tableau pseudo-aléatoire
 	for(int i = 0; i < 8*width; i++) {
 		A[i] = reduce(5*i ^ 17*i ^ 42);
