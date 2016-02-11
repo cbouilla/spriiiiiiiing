@@ -373,8 +373,8 @@ static inline void fft128(void *a) {
 
   // DEBUG :
 
-  printf("A[0][0] = %d et a[0] = %d\n", A[0][0], a[0]);
-  printf("A[8][0] = %d et a[64] = %d\n", A[8][0], a[64]);
+  printf("A[0][0] = %d", A[0][0]);
+  printf("A[8][0] = %d", A[8][0]);
   // Fin DEBUG
 
   /* Size-2 butterflies */
