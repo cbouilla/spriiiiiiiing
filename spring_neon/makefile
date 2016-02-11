@@ -5,7 +5,7 @@ all: test_fft
 
 VECTOR = vector.c vector.h
 
-test_fft: test_fft.c $(COMMON)
+test_fft: test_fft.c $(VECTOR)
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
