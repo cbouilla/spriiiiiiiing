@@ -61,6 +61,7 @@ int test_fft8(int width, i16 omega) {
 		}
 	}
 
+	printf("A[0] : %d\n", A[0]);
 	// check
 	dif_fft8(A);
         
@@ -69,7 +70,7 @@ int test_fft8(int width, i16 omega) {
 	for(int i=0; i<8; i++) {
 	  for(int j=0; j<width; j++){
 	    if (A[j + revbin8[i]*width] != B[j + i*width]) {
-	      printf("A[%d + revbin[%d]*width] : %d and B[%d + %d *width] : %d\n", j, i,A[j + revbin8[i]*width], j, i, B[j + i*width] );
+	      printf("A[0] : %d and B[0] : %d\n", A[0], B[0] );
 	      return 0;
 	    }
 	  }
