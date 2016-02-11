@@ -36,11 +36,11 @@ int test_parallelreduce() {
 
 
 int test_fft128(int width, i16 omega) {
-	i16 *A = malloc(N * width * sizeof(i16));
-	i16 *B = malloc(N * width * sizeof(i16));
+	i16 *A = malloc(128 * width * sizeof(i16));
+	i16 *B = malloc(128 * width * sizeof(i16));
 
 	// initialise un tableau pseudo-aléatoire
-	for(int i = 0; i < N*width; i++) {
+	for(int i = 0; i < 128*width; i++) {
 		A[i] = reduce(5*i ^ 17*i ^ 42);
 	}
 
@@ -48,10 +48,10 @@ int test_fft128(int width, i16 omega) {
 	// B[i] = sum(A[j] * (omega^i)^j, i=0..127)
 	for(int w=0; w<width; w++) {
 		i16 omega_i = 1; // contient omega^i
-		for(int i = 0; i < N; i++) {
+		for(int i = 0; i < 128; i++) {
 			i16 omega_ij = 1; // contient omega^(ij)
 			B[w + i * width] = 0;
-			for(int j = 0; j < N; j++) {
+			for(int j = 0; j < 128; j++) {
 				B[w + i * width] = reduce(B[w + i * width] + A[w + j*width] * omega_ij);
 				omega_ij = reduce(omega_ij * omega_i);
 			}
