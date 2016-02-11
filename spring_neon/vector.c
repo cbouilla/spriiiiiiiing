@@ -92,10 +92,10 @@ void dif_fft8(void *a) {
   printf("DEBUG L92\n");
 
   X0 = A[0];
+  printf("DEBUG L95\n");
   X1 = A[1];
   X2 = A[2];
   X3 = A[3];
-  printf("DEBUG L98\n");
   X4 = A[4];
   X5 = A[5];
   X6 = A[6];
