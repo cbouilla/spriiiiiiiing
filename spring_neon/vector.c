@@ -84,11 +84,8 @@
 
 
 void dif_fft8(void *a) {
-  printf("DEBUG L87\n");
   v16* const A = a;
   register v16 X0, X1, X2, X3, X4, X5, X6, X7;
-
-  printf("DEBUG L90\n");
 
 #define X(i) X##i
 
@@ -103,6 +100,7 @@ void dif_fft8(void *a) {
   X6 = A[6];
   X7 = A[7];
 
+  printf("DEBUG L103\n");
 
   /*
    * Begin with 8 parallels DIF FFT_8
