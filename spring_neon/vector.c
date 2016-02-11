@@ -372,7 +372,7 @@ static inline void fft128(void *a) {
 
   /* Size-2 butterflies */
   for (i = 0; i<8; i++) {
-    printf("A[%d][0] = %d et A[%d][0] = %d\n", i, A[i][0], i+8, A[i+8][0]);
+    printf("B[%d][0] = %d", i, v16_add(A[i], A[i+8])[0]);
     B[i]   = v16_add(A[i], A[i+8]);
     printf("B[%d][0] = %d\n", i, B[i][0]);
     A[i+8] = v16_sub(A[i], A[i+8]);
