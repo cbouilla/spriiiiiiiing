@@ -6,6 +6,7 @@
 #include <inttypes.h>
 
 #include "vector.h"
+#include "vector.c"
 
 v16 A[16];
 v16 S_Eval[64][2][16];
