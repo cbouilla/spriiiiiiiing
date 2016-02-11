@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -g -O3 -mfpu=neon 
+CFLAGS = -Wall -Wextra -g -O3 -std=c99 -mfpu=neon 
 CFLAGS += -funroll-loops
 
 all: test_fft
