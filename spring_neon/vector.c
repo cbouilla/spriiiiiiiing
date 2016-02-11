@@ -366,37 +366,33 @@ static inline void fft128(void *a) {
 
   // Temp space to help for interleaving in the end
   v16 B[8];
-  printf("DEBUG L369\n");
-
-  v16 *A = (v16*) a;
+ 
+  
+  v16* A = (v16*)a;
   //  v16 *Twiddle = (v16*)FFT128_Twiddle;
 
-  printf("DEBUG L374\n");
-
   /* Size-2 butterflies */
-
+  printf("DEBUG L375\n");
   for (i = 0; i<8; i++) {
     B[i]   = v16_add(A[i], A[i+8]);
     A[i+8] = v16_sub(A[i], A[i+8]);
+    printf("DEBUG L379 i : %d\n", i);
     A[i+8] = REDUCE_FULL(A[i+8]);
     A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i]);
     A[i+8] = REDUCE(A[i+8]);
   }
 
+  printf("DEBUG L384\n");
   B[3] = REDUCE(B[3]);
   B[7] = REDUCE(B[7]);
 
-  printf("DEBUG L389\n");
   fft64(B);
   fft64(A+8);
-  printf("DEBUG L392\n");
 
   /* Transpose (i.e. interleave) */
 
 //#ifdef v16_interleave_inplace
   v16 *A1=A+8, *B1=B;
-
-  printf("DEBUG L399\n");
   
   for (i=0; i<8; i++) {
     A[2*i]   = *(B1++);
