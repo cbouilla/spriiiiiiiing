@@ -375,7 +375,7 @@ static inline void fft128(void *a) {
   for (i = 0; i<8; i++) {
     B[i]   = v16_add(A[i], A[i+8]);
     A[i+8] = v16_sub(A[i], A[i+8]);
-    A[i+8] = REDUCE_FULL_S(A[i+8]);
+    A[i+8] = REDUCE_FULL(A[i+8]);
     A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i]);
     A[i+8] = REDUCE(A[i+8]);
   }
@@ -386,8 +386,6 @@ static inline void fft128(void *a) {
   fft64(A+8);
 
   /* Transpose (i.e. interleave) */
-
-#ifdef v16_interleave_inplace
   v16 *A1=A+8, *B1=B;
   
   for (i=0; i<8; i++) {
