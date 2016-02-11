@@ -34,13 +34,14 @@ int test_parallelreduce() {
 	return 1;
 }
 
+int revbin8[] = {0, 4, 2, 6, 1, 5, 3, 7};
 
-int test_fft128(int width, i16 omega) {
-	i16 *A = malloc(128 * width * sizeof(i16));
-	i16 *B = malloc(128 * width * sizeof(i16));
+int test_fft8(int width, i16 omega) {
+	i16 *A = malloc(8 * width * sizeof(i16));
+	i16 *B = malloc(8 * width * sizeof(i16));
 
 	// initialise un tableau pseudo-aléatoire
-	for(int i = 0; i < 128*width; i++) {
+	for(int i = 0; i < 8*width; i++) {
 		A[i] = reduce(5*i ^ 17*i ^ 42);
 	}
 
@@ -48,10 +49,10 @@ int test_fft128(int width, i16 omega) {
 	// B[i] = sum(A[j] * (omega^i)^j, i=0..127)
 	for(int w=0; w<width; w++) {
 		i16 omega_i = 1; // contient omega^i
-		for(int i = 0; i < 128; i++) {
+		for(int i = 0; i < 8; i++) {
 			i16 omega_ij = 1; // contient omega^(ij)
 			B[w + i * width] = 0;
-			for(int j = 0; j < 128; j++) {
+			for(int j = 0; j < 8; j++) {
 				B[w + i * width] = reduce(B[w + i * width] + A[w + j*width] * omega_ij);
 				omega_ij = reduce(omega_ij * omega_i);
 			}
@@ -60,12 +61,14 @@ int test_fft128(int width, i16 omega) {
 	}
 
 	// check
-	fft128(A);
+	dif_fft8(A);
         
-	// check
-	for(int i=0; i<128; i++) {
-	  if (A[i] != B[i]) {
-	    return 0;
+	// Output is in revbin order 
+	for(int i=0; i<8; i++) {
+	  for(int j=0; j<width; j++){
+	    if (A[j + revbin8[i]*width] != B[j + i*width]) {
+	      return 0;
+	    }
 	  }
 	}
 	return 1;

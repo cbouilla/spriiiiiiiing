@@ -390,17 +390,47 @@ static inline void fft128(void *a) {
   //  v16 *Twiddle = (v16*)FFT128_Twiddle;
 
   /* Size-2 butterflies */
-  for (i = 0; i<8; i++) {
-    B[i]   = v16_add(XCAT(X,i), XCAT(X,i+8));
-    printf("B[%d][0] = %d\n", i, B[i][0]);
-    A[i+8] = v16_sub(A[i], A[i+8]);
-    A[i+8] = REDUCE_FULL(A[i+8]);
-    A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i]);
-    A[i+8] = REDUCE(A[i+8]);
-  }
+  /* for (i = 0; i<8; i++) { */
+  /*   B[i]   = v16_add(X(i), X(i+8)); */
+  /*   printf("B[%d][0] = %d\n", i, B[i][0]); */
+  /*   A[i+8] = v16_sub(A[i], A[i+8]); */
+  /*   A[i+8] = REDUCE_FULL(A[i+8]); */
+  /*   A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i]); */
+  /*   A[i+8] = REDUCE(A[i+8]); */
+  /* } */
 
-  B[3] = REDUCE(B[3]);
-  B[7] = REDUCE(B[7]);
+  /* B[3] = REDUCE(B[3]); */
+  /* B[7] = REDUCE(B[7]); */
+
+#define BUTTERFLY_AND_TWIDDLE(i,j)                                \
+  do {                                                  \
+    v16 u= X(i);                                        \
+    v16 v= X(j);                                        \                       
+    X(i) = v16_add(u, v);                               \
+    X(j) = v16_sub(u, v);                               \
+    x(j) = REDUCE_FULL(X(j));                           \
+    X(j) = v16_mul(X(j), FFT128_Twiddle[i]);		\
+    X(j) = REDUCE(X(j));                                \
+} while(0)
+
+      
+    BUTTERFLY_AND_TWIDDLE(0,8);
+    BUTTERFLY_AND_TWIDDLE(1,9);
+    BUTTERFLY_AND_TWIDDLE(2,10);
+    BUTTERFLY_AND_TWIDDLE(3,11);
+    BUTTERFLY_AND_TWIDDLE(4,12);
+    BUTTERFLY_AND_TWIDDLE(5,13);
+    BUTTERFLY_AND_TWIDDLE(6,14);
+    BUTTERFLY_AND_TWIDDLE(7,15);
+
+B[0] = X0;
+B[1] = X1;
+B[2] = X2;
+B[3] = X3;
+B[4] = X4;
+B[5] = X5;
+B[6] = X6;
+B[7] = X7;
 
   fft64(B);
   fft64(A+8);
