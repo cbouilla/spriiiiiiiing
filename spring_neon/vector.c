@@ -367,13 +367,31 @@ static inline void fft128(void *a) {
   // Temp space to help for interleaving in the end
   v16 B[8];
   v16 *A = a;
+
+  register v16 X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15;
+
+ X0 = A[0];
+  X1 = A[1];
+  X2 = A[2];
+  X3 = A[3];
+  X4 = A[4];
+  X5 = A[5];
+  X6 = A[6];
+  X7 = A[7];
+ X8 = A[8];
+  X9 = A[9];
+  X10 = A[10];
+  X11 = A[11];
+  X12 = A[12];
+  X13 = A[13];
+  X14 = A[14];
+  X15 = A[15];
  
   //  v16 *Twiddle = (v16*)FFT128_Twiddle;
 
   /* Size-2 butterflies */
   for (i = 0; i<8; i++) {
-    printf("B[%d][0] = %d", i, v16_add(A[i], A[i+8])[0]);
-    B[i]   = v16_add(A[i], A[i+8]);
+    B[i]   = v16_add(XCAT(X,i), XCAT(X,i+8));
     printf("B[%d][0] = %d\n", i, B[i][0]);
     A[i+8] = v16_sub(A[i], A[i+8]);
     A[i+8] = REDUCE_FULL(A[i+8]);
