@@ -366,16 +366,11 @@ static inline void fft128(void *a) {
 
   // Temp space to help for interleaving in the end
   v16 B[8];
+  v16 *A = a;
+
+  printf("A[0][0] = %d\n", A[0][0]);
  
-  
-  v16* A = (v16*)a;
   //  v16 *Twiddle = (v16*)FFT128_Twiddle;
-
-  // DEBUG :
-
-  printf("A[0][0] = %d", A[0][0]);
-  printf("A[8][0] = %d", A[8][0]);
-  // Fin DEBUG
 
   /* Size-2 butterflies */
   for (i = 0; i<8; i++) {
