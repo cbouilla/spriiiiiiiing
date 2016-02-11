@@ -372,14 +372,13 @@ static inline void fft128(void *a) {
 
   /* Size-2 butterflies */
   for (i = 0; i<8; i++) {
-    printf("A[%d][0] = %d et A[%d][7] = %d\n", i, A[i][0], i+8, A[i+8][7]);
+    printf("A[%d][0] = %d et A[%d][0] = %d\n", i, A[i][0], i+8, A[i+8][0]);
     B[i]   = v16_add(A[i], A[i+8]);
+    printf("B[%d][0] = %d\n", i, B[i][0]);
     A[i+8] = v16_sub(A[i], A[i+8]);
-    printf("DEBUG i : %d\n",i);
     A[i+8] = REDUCE_FULL(A[i+8]);
     A[i+8] = v16_mul(A[i+8], FFT128_Twiddle[i]);
     A[i+8] = REDUCE(A[i+8]);
-    printf("DEBUG\n");
   }
 
   B[3] = REDUCE(B[3]);
