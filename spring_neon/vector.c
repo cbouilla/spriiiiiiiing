@@ -83,11 +83,21 @@
   } while(0)
 
 
+#define DIF_BUTTERFLY(xi,xj,n)                                \
+  do {                                                  \
+    v16 u= xi;					\
+    v16 v= xj;					\
+    xi =  v16_add(u, v);				\
+    if (n)                                              \
+      xj = v16_shift_l(v16_sub(u, v), 2*n);		\
+    else                                                \
+      xj = v16_sub(u, v);				\
+  } while(0)
+
+
 void dif_fft8(void *a) {
   v16* const A = a;
   register v16 X0, X1, X2, X3, X4, X5, X6, X7;
-
-#define X(i) X##i
 
   X0 = A[0];
   X1 = A[1];
@@ -98,74 +108,43 @@ void dif_fft8(void *a) {
   X6 = A[6];
   X7 = A[7];
 
-  /*
-   * Begin with 8 parallels DIF FFT_8
-   *
-   * FFT_8 using w=4 as 8th root of unity
-   *  Unrolled decimation in frequency (DIF) radix-2 NTT.
-   *  Output data is in revbin_permuted order.
-   */
-
-  #define wn0 0
-  #define wn1 2
-  #define wn2 4
-  #define wn3 6
-
-#define BUTTERFLY(i,j,n)                                \
-  do {                                                  \
-    v16 u= X(i);                                        \
-    v16 v= X(j);                                        \
-    X(i) =  v16_add(u, v);                              \
-    if (n)                                              \
-      X(j) = v16_shift_l(v16_sub(u, v), XCAT(wn,n));  \
-    else                                                \
-      X(j) = v16_sub(u, v);                             \
-  } while(0)
+  // TODO : check bounds everywhere
 
   // outer layer
-  BUTTERFLY(0, 4, 0);
-  BUTTERFLY(1, 5, 1);
-  BUTTERFLY(2, 6, 2);
-  BUTTERFLY(3, 7, 3);
-
+  DIF_BUTTERFLY(X0, X4, 0);
+  DIF_BUTTERFLY(X1, X5, 1);
+  DIF_BUTTERFLY(X2, X6, 2);
+  DIF_BUTTERFLY(X3, X7, 3);
   
-  DO_REDUCE(5);
-  DO_REDUCE(6);
-  DO_REDUCE(7);
+  X5 = REDUCE(X5);
+  X6 = REDUCE(X6);
+  X7 = REDUCE(X7);
   
   // middle layer
-  BUTTERFLY(0, 2, 0);
-  BUTTERFLY(4, 6, 0);
-  BUTTERFLY(1, 3, 2);
-  BUTTERFLY(5, 7, 2);
-
-
+  DIF_BUTTERFLY(X0, X2, 0);
+  DIF_BUTTERFLY(X4, X6, 0);
+  DIF_BUTTERFLY(X1, X3, 2);
+  DIF_BUTTERFLY(X5, X7, 2);
+  
   // external layer
-  BUTTERFLY(0, 1, 0);
-  BUTTERFLY(2, 3, 0);
-  BUTTERFLY(4, 5, 0);
-  BUTTERFLY(6, 7, 0);
+  DIF_BUTTERFLY(X0, X1, 0);
+  DIF_BUTTERFLY(X2, X3, 0);
+  DIF_BUTTERFLY(X4, X5, 0);
+  DIF_BUTTERFLY(X6, X7, 0);
   
   /* We don't need to reduce X(0) */
-  DO_REDUCE_FULL_S(1);
-  DO_REDUCE_FULL_S(2);
-  DO_REDUCE_FULL_S(3);
-  DO_REDUCE_FULL_S(4);
-  DO_REDUCE_FULL_S(5);
-  DO_REDUCE_FULL_S(6);
-  DO_REDUCE_FULL_S(7);
-  
-  A[0] = X0;
-  A[1] = X1;
-  A[2] = X2;
-  A[3] = X3;
-  A[4] = X4;
-  A[5] = X5;
-  A[6] = X6;
-  A[7] = X7;
-
-  #undef BUTTERFLY
+  A[0] = REDUCE_FULL(X0); // FIXME later
+  A[1] = REDUCE_FULL(X1);
+  A[2] = REDUCE_FULL(X2);
+  A[3] = REDUCE_FULL(X3);
+  A[4] = REDUCE_FULL(X4);
+  A[5] = REDUCE_FULL(X5);
+  A[6] = REDUCE_FULL(X6);
+  A[7] = REDUCE_FULL(X7);
 }
+
+
+
 
 /*
  * FFT64

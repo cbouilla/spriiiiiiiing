@@ -34,12 +34,53 @@ int test_parallelreduce() {
 	return 1;
 }
 
+
+int test_dif_butterfly() {
+  v16 a, b, c, d;
+  int tmp;
+
+  for(int i = 0; i < 8; i++){
+    a[i] = rand();
+    b[i] = rand();
+  }
+  a = REDUCE(a);
+  b = REDUCE(b);
+  c = a;
+  d = b;
+
+ 
+  DIF_BUTTERFLY(a, b, 1);
+
+ 
+  //simulate the butterfly
+
+  for(int i = 0; i < 8; i++) {
+    tmp = c[i];
+    c[i] = c[i] + d[i];
+    d[i] = ((tmp - d[i]) << 2);
+  }
+
+  for(int i = 0; i < 8; i++){
+    if(a[i] != c[i] ){
+      printf("i : %d, a : %d, c : %d\n", i, a[i], c[i]);
+      return 0;
+    }
+  }
+
+  for(int i = 0; i < 8; i++){
+    if(b[i] != d[i]){
+      printf("i : %d, b : %d, d : %d\n", i, b[i], d[i]);
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
 int revbin8[] = {0, 4, 2, 6, 1, 5, 3, 7};
 
 int test_fft8(int width, i16 omega) {
-	/* i16 *A = malloc(8 * width * sizeof(i16)); */
-	/* i16 *B = malloc(8 * width * sizeof(i16)); */
-  i16 A[8*width];
+  i16 A[8*width] __attribute ((aligned (16)));
   i16 B[8*width];
 	// initialise un tableau pseudo-aléatoire
 	for(int i = 0; i < 8*width; i++) {
@@ -61,16 +102,15 @@ int test_fft8(int width, i16 omega) {
 		}
 	}
 
-	printf("A[0] : %d\n", A[0]);
+        
 	// check
 	dif_fft8(A);
-        
         
 	// Output is in revbin order 
 	for(int i=0; i<8; i++) {
 	  for(int j=0; j<width; j++){
 	    if (A[j + revbin8[i]*width] != B[j + i*width]) {
-	      printf("A[0] : %d and B[0] : %d\n", A[0], B[0] );
+  printf("i : %d, j :%d a :%d, b : %d\n", i, j, A[j + revbin8[i]*width], B[j + i*width]); 
 	      return 0;
 	    }
 	  }
@@ -82,6 +122,7 @@ int test_fft8(int width, i16 omega) {
 
 int main() {
   printf("parallel_reduce : %d\n", test_parallelreduce());
-  printf("dif_fft8 : %d\n", test_fft8(16,4));
+  printf("dif_butterfly :%d\n", test_dif_butterfly());
+  printf("dif_fft8 : %d\n", test_fft8(8,4));
   return 0; 
 }
