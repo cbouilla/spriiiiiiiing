@@ -3,9 +3,9 @@ CFLAGS += -funroll-loops
 
 all: test_fft
 
-VECTOR = vector.c vector.h
+COMMON = vector.c vector.h common.c
 
-test_fft: test_fft.c $(VECTOR)
+test_fft: test_fft.c $(COMMON)
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:

@@ -32,43 +32,38 @@ typedef int32x2_t sv32 __attribute__((aligned (16)));
 
 #define v16_movemask(x) ({			\
       dsv8 q0 = v8_transpose(v16_to_v8(x));	\
-      sv32 q1 = vreinterpret_s32_s8(q0.val[0]);	\
+      sv32 q1 = vreinterpret_s32_s8(q1.val[0]);	\
       q1[0]|q1[1];				\
     })
 
 
 int main(){
   v16 a;
-  sv8 b;
+  v8 b;
+  sv8 b0, b1;
   sv32 c;
   int i, mask;
 
   for(i = 0; i < 8; i++){
-    a[i] = 0;
-    b[i] = i;
+    a[i] = 1;
   }
 
-  a[0] = 0xffff;
-  a[7] = 0xffff;
+  b = v16_to_v8(a);
 
+  b0 = v8_lside(b); b1 = v8_rside(b);
 
-  /* for(i = 0; i <16 ; i++){ */
-  /*   printf("b[%d] = %d\n", i, b[i]); */
-  /* } */
+  for(i = 0; i <8 ; i++){
+    printf("b[%d] = %d ; %d\n", i, b0[i], b1[i]);
+  }
 
 
   /* for(i = 0; i < 8; i++){ */
   /*   printf("tr0[%d] = %d ; tr1[%d] = %d\n", i, tr.val[0][i], i, tr.val[1][i]); */
   /* } */
 
-  c = sv8_to_sv32(b);
+  //  c = sv8_to_sv32(b);
 
-  mask = v16_movemask(a);
-
-  printf("mask = %x\n", mask);
-  for(i = 0; i < 2; i++){
-    printf("c[%d] = %x\n", i, c[i]);
-  }
+ 
 
 }
 

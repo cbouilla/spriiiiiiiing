@@ -5,8 +5,7 @@
             
 #define K 64
 
-            
-#include "vector.c"
+#include "common.c"
 
 typedef short int i16;
 
@@ -164,14 +163,24 @@ int test_fft(int N, int width, i16 omega) {
 	} else if(N == 64) {
 	  fft64(A);
 
-	  for(int i = 0; i < 64; i++){
-	    printf("A[%d] = %d B = %d\n", i, A[i], B[i]);
-	  }
+	  /* for(int i = 0; i < 64; i++){ */
+	  /*   printf("A[%d] = %d B = %d\n", i, A[i], B[i]); */
+	  /* } */
 
 	  for(int i = 0; i < 64; i++){
 	    if(A[i] != B[i]) {
 	      printf("A[%d] = %d vs B[%d] = %d\n", i, A[i], i, B[i]);
 
+	      return 0;
+	    }
+	  }
+	  return 1;
+	} else if (N == 128){
+	  fft128(A);
+
+	  for(int i = 0; i < 128; i++){
+	    if(A[i] != B[i]) {
+	      printf("A[%d] = %d vs B[%d] = %d\n", i, A[i], i, B[i]);
 	      return 0;
 	    }
 	  }
@@ -184,13 +193,59 @@ int test_fft(int N, int width, i16 omega) {
 	return 0;
 }
 
+// Teste le mode compteur pour x = 0x2 et Gray = 3+1 = 4.
+int test_UpdateGray() {
+  uint32_t x = 0;
 
+  x = UpdateGray(0x2, 4);
+
+  if((x ^ 0x6) != 0){
+    printf("x : %x\n", x);
+    return 0;
+  }
+
+  return 1;
+
+}
+
+
+// Teste la fonction reject
+int test_reject(v16 a){
+  int r, check;
+
+  r = reject(a);
+  check = 0;
+
+  for(int i = 0; i < 8; i++){
+    if(a[i] == -1){
+      check = 1;
+    }
+  }
+
+  if(check == 0 && r != 0){
+    printf("r : %x\n", r);
+    return 0;
+  }
+
+  if(check != 0 && r == 0){
+    printf("check = %d\n", check);
+    return 0;
+  }
+
+  return 1;
+}
 
 int main() {
+  v16 a = CV(1);
+  a[2] = -1;
+
   printf("parallel_reduce : %d\n", test_parallelreduce());
   printf("dif_butterfly : %d\n", test_dif_butterfly());
   printf("dit_butterfly : %d\n", test_dit_butterfly());
   printf("dif_fft8 : %d\n", test_fft(8,8,4));
-  printf("fft64 : %d\n", test_fft(64, 1, -35));
+  printf("fft64 : %d\n", test_fft(64, 1, -35)); 
+  printf("fft128 : %d\n", test_fft(128, 1, 42));
+  printf("UpdateGray : %d\n", test_UpdateGray());
+  printf("test_reject : %d\n", test_reject(a));
   return 0; 
 }
