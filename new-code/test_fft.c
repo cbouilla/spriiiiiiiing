@@ -21,6 +21,8 @@ i16 reduce(i16 a) {
 int test_fft_64(int N, int width, i16 omega) {
  i16 A[N*width] __attribute ((aligned (16)));
   i16 B[N*width];
+
+assert(N == 64 || N == 128);
 	// initialise un tableau pseudo-aléatoire
 	for(int i = 0; i < N*width; i++) {
 		A[i] = reduce(5*i ^ 17*i ^ 42);
@@ -41,15 +43,17 @@ int test_fft_64(int N, int width, i16 omega) {
 		}
 	}
 
-        
-	fft64(A);
+if(N == 64)
+  fft64(A);
+ else
+   fft128(A);
 
-	//check
-	for(int i = 0; i < 64; i++){
-	  printf("A[%d] = %d B = %d\n", i, A[i], B[i]);
-	}
+	/* //check */
+	/* for(int i = 0; i < N; i++){ */
+	/*   printf("A[%d] = %d B = %d\n", i, A[i], B[i]); */
+	/* } */
 
-	for(int i = 0; i < 64; i++){
+	for(int i = 0; i < N; i++){
 	  if(A[i] != B[i]) {
 	    printf("A[%d] = %d vs B[%d] = %d\n", i, A[i], i, B[i]);
 
@@ -63,5 +67,5 @@ int test_fft_64(int N, int width, i16 omega) {
 
 
 int main(){
-printf("fft64 : %d\n", test_fft_64(64, 1, -35));
+printf("fft64 : %d\n", test_fft_64(128, 1, 42));
 }

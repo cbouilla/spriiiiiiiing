@@ -59,7 +59,7 @@ static const v16 V257 = CV(257);
 
 #define v16_movemask(x) ({			\
       dsv8 q0 = v8_transpose(v16_to_v8(x));	\
-      sv32 q1 = vreinterpret_s32_s8(q0.val[0]);	\
+      sv32 q1 = vreinterpret_s32_s8(q0.val[1]);	\
       q1[0]|q1[1];				\
     })
 
