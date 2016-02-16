@@ -7,8 +7,8 @@
 
 #include "vector.c"
 
-v16 A[16];
-v16 S_Eval[64][2][16];
+v16 A[16] __attribute__ ((aligned(16)));
+v16 S_Eval[64][2][16] __attribute__ ((aligned(16)));
 
 // a table of the powers of omega. 
 const v16 omegaPowers[16] = {
@@ -98,7 +98,7 @@ int reject(v16 a){
 
 v16 rand_v16() {
   v16 x;
-  for(int j=0; j < 16; j++) {
+  for(int j=0; j < 8; j++) {
     do {
       x[j] = rand();
     } while(x[j]==0);
