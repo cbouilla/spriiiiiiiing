@@ -11,8 +11,9 @@ typedef int16x8_t v16 __attribute__ ((aligned (16)));
 typedef int8x16_t v8 __attribute__ ((aligned (16)));
 typedef int8x8_t sv8 __attribute__ ((aligned (16)));
 typedef int8x8x2_t dsv8 __attribute__ ((aligned (16)));
-typedef int32x2_t sv32 __attribute__((aligned (16)));
-
+typedef int32x2_t sv32 __attribute__ ((aligned (16)));
+typedef int16x4_t sv16 __attribute__ ((aligned (16)));
+typedef int16x4x2_t dsv16 __attribute__ ((aligned (16)));
 
 #define CV(x) {x, x, x, x, x, x, x, x}
 
@@ -23,6 +24,8 @@ static const v16 V257 = CV(257);
 #define v16_and vandq_s16
 #define v16_or  vorrq_s16
 #define v16_xor veorq_s16
+#define sv16_xor veor_s16
+#define sv16_and vand_s16
 
 #define v16_add vaddq_s16
 #define v16_sub vsubq_s16
@@ -31,6 +34,7 @@ static const v16 V257 = CV(257);
 
 #define v16_shift_r  vshrq_n_s16
 #define v16_shift_l  vshlq_n_s16
+#define sv16_shift_l vshl_n_s16
 
 #define v16_to_v8 vreinterpretq_s8_s16
 #define sv8_to_sv32 vreinterpret_s32_s8
@@ -42,6 +46,7 @@ static const v16 V257 = CV(257);
 #define v8_rside vget_low_s8
 
 #define v8_transpose(x) vtrn_s8(v8_lside(x), v8_rside(x))
+#define v16_transpose(x) vtrn_s16(vget_high_s16(x), vget_low_s16(x));
 
 #define  v16_interleave_inplace(a__,b__) ({		\
       int16x8x2_t c__ = vzipq_s16 (a__, b__);		\

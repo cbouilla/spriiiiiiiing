@@ -235,6 +235,23 @@ int test_reject(v16 a){
   return 1;
 }
 
+int test_rounding(){
+  v16 a;
+  uint32_t r = 0; 
+
+  //initialise un tableau pseudo-aléatoire
+  for(int i = 0; i < 8; i++){
+    a[i] = rand() & 0x00ff;
+  }
+  for(int i = 0; i < 8; i++) {
+    r <<=4;
+    r ^= (a[i]>>4);
+  }
+ 
+  uint64_t r2 = rounding4(a);
+  return r == r2;
+}
+
 int main() {
   v16 a = CV(1);
   a[2] = -1;
@@ -247,5 +264,6 @@ int main() {
   printf("fft128 : %d\n", test_fft(128, 1, 42));
   printf("UpdateGray : %d\n", test_UpdateGray());
   printf("test_reject : %d\n", test_reject(a));
+  printf("test_rounding : %d\n", test_rounding());
   return 0; 
 }
