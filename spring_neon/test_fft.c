@@ -130,7 +130,7 @@ int test_fft(int N, int width, i16 omega) {
 	}
 
 	// calcule les [width] FFTs parallèles en O(width * N^2).
-	// B[i] = sum(A[j] * (omega^i)^j, i=0..127)
+	// B[i] = sum(A[j] * (omega^i)^j, i=0..N-1)
 	for(int w=0; w<width; w++) {
 		i16 omega_i = 1; // contient omega^i
 		for(int i = 0; i < N; i++) {
@@ -260,8 +260,8 @@ int main() {
   printf("dif_butterfly : %d\n", test_dif_butterfly());
   printf("dit_butterfly : %d\n", test_dit_butterfly());
   printf("dif_fft8 : %d\n", test_fft(8,8,4));
-  printf("fft64 : %d\n", test_fft(64, 1, -35)); 
-  printf("fft128 : %d\n", test_fft(128, 1, 42));
+  printf("fft64 : %d\n", test_fft(64, 1, 46)); 
+  printf("fft128 : %d\n", test_fft(128, 1, -118));
   printf("UpdateGray : %d\n", test_UpdateGray());
   printf("test_reject : %d\n", test_reject(a));
   printf("test_rounding : %d\n", test_rounding());
