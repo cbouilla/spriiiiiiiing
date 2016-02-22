@@ -130,7 +130,7 @@ int test_fft(int N, int width, i16 omega) {
 	}
 
 	// calcule les [width] FFTs parallèles en O(width * N^2).
-	// B[i] = sum(A[j] * (omega^i)^j, i=0..127)
+	// B[i] = sum(A[j] * (omega^i)^j, i=0..N-1)
 	for(int w=0; w<width; w++) {
 		i16 omega_i = 1; // contient omega^i
 		for(int i = 0; i < N; i++) {
@@ -235,6 +235,32 @@ int test_reject(v16 a){
   return 1;
 }
 
+int test_rounding(int n){
+  v16 a;
+  uint32_t r = 0, r2; 
+
+  //initialise un tableau pseudo-aléatoire
+  for(int i = 0; i < 8; i++){
+    a[i] = rand() & 0x00ff;
+  }
+  for(int i = 0; i < 8; i++) {
+    r <<=n;
+    r ^= (a[i]>>(8-n));
+  }
+ 
+  if(n == 4){
+    r2 = rounding4(a);
+  }
+  else if(n == 2){
+    r2 = rounding2(a);
+  }
+  else {
+    printf("valeur de n non prise en compte\n");
+    return 0;
+  }
+  return r == r2;
+}
+
 int main() {
   v16 a = CV(1);
   a[2] = -1;
@@ -243,9 +269,11 @@ int main() {
   printf("dif_butterfly : %d\n", test_dif_butterfly());
   printf("dit_butterfly : %d\n", test_dit_butterfly());
   printf("dif_fft8 : %d\n", test_fft(8,8,4));
-  printf("fft64 : %d\n", test_fft(64, 1, -35)); 
-  printf("fft128 : %d\n", test_fft(128, 1, 42));
+  printf("fft64 : %d\n", test_fft(64, 1, 46)); 
+  printf("fft128 : %d\n", test_fft(128, 1, -118));
   printf("UpdateGray : %d\n", test_UpdateGray());
   printf("test_reject : %d\n", test_reject(a));
+  printf("test_rounding4 : %d\n", test_rounding(4));
+  printf("test_rounding2 : %d\n", test_rounding(2));
   return 0; 
 }
