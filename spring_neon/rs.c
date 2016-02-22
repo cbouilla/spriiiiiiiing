@@ -6,7 +6,7 @@
 #include <inttypes.h>
 
 #define K 64
-#define N_BYTES 1024
+#define N_BYTES (1024ull*1024*1024)
 
 #include "common.c"
 
@@ -41,10 +41,24 @@ uint32_t GrayCounterMode(int n_bytes){
 
 int main(){
 
+  clock_t begin, end;
+  begin = clock();
+
+
   init_secrets();  // TODO remplacer par un LFSR ?
 
+  begin = clock();
+
   uint32_t Output = GrayCounterMode(N_BYTES);
+
+  end = clock();
+
+
   printf("Output : %#" PRIx32 "\n", Output);
+
+
+  double dt = (double) (end - begin) / CLOCKS_PER_SEC;
+  printf ("%f MB/s (time = %f)\n", ((float)N_BYTES/1000000)/dt, dt);
 
   return 0;
 }

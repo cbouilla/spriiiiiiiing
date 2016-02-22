@@ -36,6 +36,8 @@ const v16 m0 = {0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00};
 const v16 m1 = {0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0};
 const sv16 sm0 = {0xff, 0xff, 0x00, 0x00};
 const sv16 sm1 = {0x00, 0x00, 0xff, 0xff};
+const v16 tm0 = {0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00};
+const v16 tm1 = {0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0};
 
 // Coef <--- coefficient du polynome représenté sous forme évalué dans Eval.
 void ConvertEvalToCoefficients(const v16 *Eval, v16 *Coef) {
@@ -106,6 +108,11 @@ v16 rand_v16() {
   return REDUCE_FULL(x);
 }
 
+/*
+ * Rouding functions.
+ */
+
+// On renvoie 4 bits par coefficients.
 uint32_t rounding4(v16 a) {
   v16 b = v16_and(a, m0);
   v16 c = v16_shift_r(v16_and(a, m1), 4);
@@ -120,6 +127,16 @@ uint32_t rounding4(v16 a) {
   return res;
 }
 
+uint16_t rounding2(v16 a) {
+  v16 b = v16_and(a, tm0);
+  v16 c = v16_shift_r(v16_and(a, tm1), 2);
+  dsv16 d0 = v16_transpose(b);
+  dsv16 d1 = v16_transpose(c);
+  sv16 d = sv16_xor(d0.val[0], d1.val[1]);
+  uint16_t res = (d[1]<<8)^(d[3]<<4);
+  res ^= (d[0])^(d[2]>>4);
+  return res;
+}
 
 // méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public ! (à remplacer plus tard par lfsr ???)
 void init_secrets() {

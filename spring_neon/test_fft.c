@@ -235,20 +235,29 @@ int test_reject(v16 a){
   return 1;
 }
 
-int test_rounding(){
+int test_rounding(int n){
   v16 a;
-  uint32_t r = 0; 
+  uint32_t r = 0, r2; 
 
   //initialise un tableau pseudo-aléatoire
   for(int i = 0; i < 8; i++){
     a[i] = rand() & 0x00ff;
   }
   for(int i = 0; i < 8; i++) {
-    r <<=4;
-    r ^= (a[i]>>4);
+    r <<=n;
+    r ^= (a[i]>>(8-n));
   }
  
-  uint64_t r2 = rounding4(a);
+  if(n == 4){
+    r2 = rounding4(a);
+  }
+  else if(n == 2){
+    r2 = rounding2(a);
+  }
+  else {
+    printf("valeur de n non prise en compte\n");
+    return 0;
+  }
   return r == r2;
 }
 
@@ -264,6 +273,7 @@ int main() {
   printf("fft128 : %d\n", test_fft(128, 1, -118));
   printf("UpdateGray : %d\n", test_UpdateGray());
   printf("test_reject : %d\n", test_reject(a));
-  printf("test_rounding : %d\n", test_rounding());
+  printf("test_rounding4 : %d\n", test_rounding(4));
+  printf("test_rounding2 : %d\n", test_rounding(2));
   return 0; 
 }
