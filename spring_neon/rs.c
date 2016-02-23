@@ -10,6 +10,7 @@
 
 #include "common.c"
 
+// renvoit le Xor de n_bytes octets de flux.
 uint32_t GrayCounterMode(int n_bytes){
   v16 Poly[16], Prod[16];
   uint32_t x=0, Gray_Counter=0;
@@ -59,6 +60,8 @@ int main(){
 
   double dt = (double) (end - begin) / CLOCKS_PER_SEC;
   printf ("%f MB/s (time = %f)\n", ((float)N_BYTES/1000000)/dt, dt);
+
+  printf ("%.2f cycles / byte\n", dt*1e9 / N_BYTES);
 
   return 0;
 }

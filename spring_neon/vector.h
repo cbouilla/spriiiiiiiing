@@ -14,6 +14,8 @@ typedef int8x8x2_t dsv8 __attribute__ ((aligned (16)));
 typedef int32x2_t sv32 __attribute__ ((aligned (16)));
 typedef int16x4_t sv16 __attribute__ ((aligned (16)));
 typedef int16x4x2_t dsv16 __attribute__ ((aligned (16)));
+typedef int64x2_t v64 __attribute__((aligned (16)));
+
 
 #define CV(x) {x, x, x, x, x, x, x, x}
 

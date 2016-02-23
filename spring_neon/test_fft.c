@@ -261,6 +261,18 @@ int test_rounding(int n){
   return r == r2;
 }
 
+char test_PermutedMovmask16(){
+  v16 a = {0x00, 0xffff, 0x00, 0xffff, 0xffff, 0x00, 0x00, 0xffff};
+  int r = PermutedMovmask16(a);
+  return r == 0xc9;
+}
+
+char test_PermutedMSB(){
+  v16 a = {2, -2, 3, -3, -4, 4, 5, -5};
+  int r = PermutedMSB(a);
+  return r == 0xc9;
+}
+
 int main() {
   v16 a = CV(1);
   a[2] = -1;
@@ -275,5 +287,7 @@ int main() {
   printf("test_reject : %d\n", test_reject(a));
   printf("test_rounding4 : %d\n", test_rounding(4));
   printf("test_rounding2 : %d\n", test_rounding(2));
+  printf("test_permuted_movmask : %d\n", test_PermutedMovmask16());
+  printf("test_permuted_msb : %d\n", test_PermutedMSB());
   return 0; 
 }

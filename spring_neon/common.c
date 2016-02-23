@@ -31,6 +31,7 @@ const v16 omegaPowers[16] = {
 };
 
 const v16 REJECTION_VECT = CV(-1);
+const v16 VECT_ZERO = CV(0);
 const int NBITS = 4;
 const v16 m0 = {0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00};
 const v16 m1 = {0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0};
@@ -98,15 +99,35 @@ int reject(v16 a){
   return v16_movemask(mask);
 }
 
-v16 rand_v16() {
-  v16 x;
-  for(int j=0; j < 8; j++) {
-    do {
-      x[j] = rand();
-    } while(x[j]==0);
-  }
-  return REDUCE_FULL(x);
+/*
+ * renvoie le bit de poids fort de chaque coefficient d'un mask
+ * la sortie est permutée.
+ */
+char PermutedMovmask16(v16 a){ 
+  v8 b = vnegq_s8(vreinterpretq_s8_s16(a));
+  dsv8 c = vzip_s8(vget_low_s8(b), vget_high_s8(b));
+  sv8 d = vsli_n_s8(c.val[0], c.val[1], 4);
+  sv32 e = vreinterpret_s32_s8(d);
+  int32_t r0 = e[0] ^ (e[1] << 2);
+  int16_t r1 = (r0 >>15) & (0x00ff);
+  char r = r1 ^ (r0 >> 24);
+  return r;
+ }
+
+/*
+ * Extract most signifiquant bit of each coefficient.
+ * Output is permuted.
+ */
+char PermutedMSB(v16 a){
+  v16 mask = v16_cmp_gt(VECT_ZERO, a);
+ char  r = PermutedMovmask16(mask);
+  return r;
 }
+
+/*
+ * Code BCH
+ */
+
 
 /*
  * Rouding functions.
@@ -137,6 +158,17 @@ uint16_t rounding2(v16 a) {
   res ^= (d[0])^(d[2]>>4);
   return res;
 }
+
+v16 rand_v16() {
+  v16 x;
+  for(int j=0; j < 8; j++) {
+    do {
+      x[j] = rand();
+    } while(x[j]==0);
+  }
+  return REDUCE_FULL(x);
+}
+
 
 // méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public ! (à remplacer plus tard par lfsr ???)
 void init_secrets() {

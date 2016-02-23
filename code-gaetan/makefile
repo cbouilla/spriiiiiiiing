@@ -1,7 +1,7 @@
 CFLAGS = -Wall -Wextra -g -O3 -std=c99 -march=native
 CFLAGS += -funroll-loops -fpeel-loops --param max-completely-peeled-insns=850
 
-all: new_spring
+all: spring_bch
 
 #new_spring: new_spring.c poly_eval.h vector.h vector.c compat.h
 #	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@
