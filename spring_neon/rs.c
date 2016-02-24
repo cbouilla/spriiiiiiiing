@@ -29,7 +29,7 @@ uint32_t GrayCounterMode(int n_bytes){
     for(int i = 0; i < 8; i++){
       const v16 a = Poly[i];
       if(!reject(a)) {
-	FinalOutput ^= rounding4(a);
+	FinalOutput ^= prounding4(a); //permuted output.
 	count += NBITS;
       }
     }

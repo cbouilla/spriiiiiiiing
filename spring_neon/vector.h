@@ -14,7 +14,8 @@ typedef int8x8x2_t dsv8 __attribute__ ((aligned (16)));
 typedef int32x2_t sv32 __attribute__ ((aligned (16)));
 typedef int16x4_t sv16 __attribute__ ((aligned (16)));
 typedef int16x4x2_t dsv16 __attribute__ ((aligned (16)));
-typedef int64x2_t v64 __attribute__((aligned (16)));
+typedef uint64x2_t uv64 __attribute__((aligned (16)));
+typedef uint64x1_t ui64 __attribute__((aligned (16)));
 
 
 #define CV(x) {x, x, x, x, x, x, x, x}
@@ -43,6 +44,8 @@ static const v16 V257 = CV(257);
 
 #define v16_cmp_gt(a,b) vreinterpretq_s16_u16(vcgtq_s16(a,b))
 #define v16_cmp_eq(a,b) vreinterpretq_s16_u16(vceqq_s16(a,b))
+#define ui64_shiftl_xor(a, b, i) veor_u64(a, vshl_n_u64(b, i));
+#define ui64_shiftr_xor(a, b, i) veor_u64(a, vshr_n_u64(b, i));
 
 #define v8_lside vget_high_s8
 #define v8_rside vget_low_s8

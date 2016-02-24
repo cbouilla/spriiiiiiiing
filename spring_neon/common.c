@@ -33,6 +33,7 @@ const v16 omegaPowers[16] = {
 const v16 REJECTION_VECT = CV(-1);
 const v16 VECT_ZERO = CV(0);
 const int NBITS = 4;
+const v16 m = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
 const v16 m0 = {0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00};
 const v16 m1 = {0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0xf0};
 const sv16 sm0 = {0xff, 0xff, 0x00, 0x00};
@@ -127,13 +128,76 @@ char PermutedMSB(v16 a){
 /*
  * Code BCH
  */
+uint64_t BCH128to64(uv64 in){
+  register ui64 b1 = in[0];
+  register ui64 res = b1;
+  res = ui64_shiftl_xor(res, b1, 2);
+  res = ui64_shiftl_xor(res, b1, 7);
+  res = ui64_shiftl_xor(res, b1, 8);
+  res = ui64_shiftl_xor(res, b1, 10);
+  res = ui64_shiftl_xor(res, b1, 12);
+  res = ui64_shiftl_xor(res, b1, 14);
+  res = ui64_shiftl_xor(res, b1, 15);
+  res = ui64_shiftl_xor(res, b1, 16);
+  res = ui64_shiftl_xor(res, b1, 23);
+  res = ui64_shiftl_xor(res, b1, 25);
+  res = ui64_shiftl_xor(res, b1, 27);
+  res = ui64_shiftl_xor(res, b1, 28);
+  res = ui64_shiftl_xor(res, b1, 30);
+  res = ui64_shiftl_xor(res, b1, 31);
+  res = ui64_shiftl_xor(res, b1, 32);
+  res = ui64_shiftl_xor(res, b1, 33);
+  res = ui64_shiftl_xor(res, b1, 37);
+  res = ui64_shiftl_xor(res, b1, 38);
+  res = ui64_shiftl_xor(res, b1, 39);
+  res = ui64_shiftl_xor(res, b1, 40);
+  res = ui64_shiftl_xor(res, b1, 41);
+  res = ui64_shiftl_xor(res, b1, 42);
+  res = ui64_shiftl_xor(res, b1, 44);
+  res = ui64_shiftl_xor(res, b1, 45);
+  res = ui64_shiftl_xor(res, b1, 48);
+  res = ui64_shiftl_xor(res, b1, 58);
+  res = ui64_shiftl_xor(res, b1, 61);
+  res = ui64_shiftl_xor(res, b1, 63);
 
+  register ui64 b2 = in[1];
+  res = ui64_shiftr_xor(res, b2, 62);
+  res = ui64_shiftr_xor(res, b2, 57);
+  res = ui64_shiftr_xor(res, b2, 56);
+  res = ui64_shiftr_xor(res, b2, 54);
+  res = ui64_shiftr_xor(res, b2, 52);
+  res = ui64_shiftr_xor(res, b2, 50);
+  res = ui64_shiftr_xor(res, b2, 49);
+  res = ui64_shiftr_xor(res, b2, 48);
+  res = ui64_shiftr_xor(res, b2, 41);
+  res = ui64_shiftr_xor(res, b2, 39);
+  res = ui64_shiftr_xor(res, b2, 37);
+  res = ui64_shiftr_xor(res, b2, 36);
+  res = ui64_shiftr_xor(res, b2, 34);
+  res = ui64_shiftr_xor(res, b2, 33);
+  res = ui64_shiftr_xor(res, b2, 32);
+  res = ui64_shiftr_xor(res, b2, 31);
+  res = ui64_shiftr_xor(res, b2, 27);
+  res = ui64_shiftr_xor(res, b2, 26);
+  res = ui64_shiftr_xor(res, b2, 25);
+  res = ui64_shiftr_xor(res, b2, 24);
+  res = ui64_shiftr_xor(res, b2, 23);
+  res = ui64_shiftr_xor(res, b2, 22);
+  res = ui64_shiftr_xor(res, b2, 20);
+  res = ui64_shiftr_xor(res, b2, 19);
+  res = ui64_shiftr_xor(res, b2, 16);
+  res = ui64_shiftr_xor(res, b2, 6);
+  res = ui64_shiftr_xor(res, b2, 3);
+  res = ui64_shiftr_xor(res, b2, 1);
+
+  return (uint64_t)res ^ ((uint64_t)(-(b2&1)));
+}
 
 /*
  * Rouding functions.
  */
 
-// On renvoie 4 bits par coefficients.
+// On renvoie 4 bits par coefficients (pas de permutations).
 uint32_t rounding4(v16 a) {
   v16 b = v16_and(a, m0);
   v16 c = v16_shift_r(v16_and(a, m1), 4);
@@ -146,6 +210,16 @@ uint32_t rounding4(v16 a) {
   res ^=(e[0]^f[2]); 
 
   return res;
+}
+
+// on renvoie 4 bits par coefficients (sortie permutée).
+uint32_t prounding4(v16 a){
+  v8 b = vreinterpretq_s8_s16(a);
+  dsv8 c = vzip_s8(vget_low_s8(b), vget_high_s8(b));
+  sv8 d = vsri_n_s8(c.val[0], c.val[1], 4);
+  sv32 e = vreinterpret_s32_s8(d);
+  uint32_t r = (e[0]<<16)^(e[1]);
+  return r;
 }
 
 uint16_t rounding2(v16 a) {

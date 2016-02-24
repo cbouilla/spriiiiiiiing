@@ -261,16 +261,30 @@ int test_rounding(int n){
   return r == r2;
 }
 
-char test_PermutedMovmask16(){
+int test_permuted_rounding(){
+  v16 a = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80};
+  uint32_t r1 = 0x57136824;
+  uint32_t r = prounding4(a);
+  return r == r1;
+}
+
+int test_PermutedMovmask16(){
   v16 a = {0x00, 0xffff, 0x00, 0xffff, 0xffff, 0x00, 0x00, 0xffff};
   int r = PermutedMovmask16(a);
   return r == 0xc9;
 }
 
-char test_PermutedMSB(){
+int test_PermutedMSB(){
   v16 a = {2, -2, 3, -3, -4, 4, 5, -5};
   int r = PermutedMSB(a);
   return r == 0xc9;
+}
+
+int test_BCH(){
+  uv64 a = {0x0123456789abcdef, 0x0f1e2d3c4b5a6987};
+  uint64_t r = BCH128to64(a);
+  uint64_t r1 = 0x48ea189bb7188543;
+  return r == r1;
 }
 
 int main() {
@@ -287,7 +301,9 @@ int main() {
   printf("test_reject : %d\n", test_reject(a));
   printf("test_rounding4 : %d\n", test_rounding(4));
   printf("test_rounding2 : %d\n", test_rounding(2));
+  printf("test_permuted_rounding : %d\n", test_permuted_rounding());
   printf("test_permuted_movmask : %d\n", test_PermutedMovmask16());
   printf("test_permuted_msb : %d\n", test_PermutedMSB());
+  printf("test_BCH : %d\n", test_BCH());
   return 0; 
 }
