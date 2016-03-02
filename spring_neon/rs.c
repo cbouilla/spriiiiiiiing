@@ -6,7 +6,7 @@
 #include <inttypes.h>
 
 #define K 64
-#define N_BYTES (1024ull*1024*1024)
+#define N_BYTES (128ull*1024*1024)
 
 #include "common.c"
 
@@ -26,7 +26,7 @@ uint32_t GrayCounterMode(int n_bytes){
 
   while(count < n_bytes) {
     ConvertEvalToCoefficients(Prod, Poly);
-    for(int i = 0; i < 8; i++){
+    for(int i = 0; i < 16; i++){
       const v16 a = Poly[i];
       if(!reject(a)) {
 	FinalOutput ^= prounding4(a); //permuted output.
