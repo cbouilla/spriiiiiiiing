@@ -4,7 +4,7 @@
 #include <inttypes.h>
 
 #define K 64
-#define N_BYTES (1024ull*1024*1024)
+#define N_BYTES 320000000
 
 #include "common.c"
 
