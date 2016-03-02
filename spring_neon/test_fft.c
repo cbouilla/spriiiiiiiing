@@ -287,6 +287,28 @@ int test_BCH(){
   return r == r1;
 }
 
+/* int test_RandomSequence(){ */
+/*   uint32_t a[4], b[4]; */
+  
+/*   for (int i = 0; i <4; i++){ */
+/*     a[i] = rand(); */
+/*     b[i] = a[i]; */
+/*   } */
+
+/*   uint32_t r = RandomSequence(a); */
+
+/*   for(int i = 0; i < 3; i++){ */
+/*     if(a[i+1] != b[i] ){ */
+/*       return 0; */
+/*     } */
+/*   } */
+/*   uint32_t r1 = b[0] * 0xdeadbeef; */
+/*   r1 += b[3]; */
+
+/*   return (r1 == a[0] && r == b[3]); */
+
+/* } */
+
 int main() {
   v16 a = CV(1);
   a[2] = -1;

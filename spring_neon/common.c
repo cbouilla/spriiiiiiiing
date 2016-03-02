@@ -100,6 +100,9 @@ int reject(v16 a){
   return v16_movemask(mask);
 }
 
+// Sans utiliser NEON
+
+
 /*
  * renvoie le bit de poids fort de chaque coefficient d'un mask
  * la sortie est permutée.
@@ -243,8 +246,36 @@ v16 rand_v16() {
   return REDUCE_FULL(x);
 }
 
+/* uint32_t RandomSequence(uint32_t *X){ */
+/*   uint32_t r; */
 
-// méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public ! (à remplacer plus tard par lfsr ???)
+/*   r = X[3]; */
+/*   X[3] = X[2]; */
+/*   X[2] = X[1]; */
+/*   X[1] = X[0]; */
+/*   X[0] = X[0] * 0xdeadbeef; */
+/*   X[0] += r; */
+
+/*   return r;   */
+/* } */
+
+/* v16 Randomv16AndUpdateSequence(uint32_t *seed){ */
+/*   v16 x; */
+/*   int16_t x0, x1, a0, a1; */
+/*   for(int i = 0; i < 7; i+=2){ */
+/*     do{ */
+/*       int32_t xx = RandomSequence(seed); */
+/*       x0 = xx; x1 = xx>>16; */
+/*       a0 = x0/256; a1 = x1/256; */
+/*     } while(256*a0 == x0 || 256*a1 == x1); */
+/*     x[i] = x0; */
+/*     x[i+1] = x1; */
+/*   } */
+/*   return REDUCE_FULL(x); */
+/* } */
+
+
+// méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
 void init_secrets() {
   srand(42);
 

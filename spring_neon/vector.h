@@ -16,6 +16,7 @@ typedef int16x4_t sv16 __attribute__ ((aligned (16)));
 typedef int16x4x2_t dsv16 __attribute__ ((aligned (16)));
 typedef uint64x2_t uv64 __attribute__((aligned (16)));
 typedef uint64x1_t ui64 __attribute__((aligned (16)));
+typedef int32x4_t v32 __attribute__((aligned (16)));
 
 
 #define CV(x) {x, x, x, x, x, x, x, x}
