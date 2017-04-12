@@ -8,7 +8,7 @@
 
 #include "common.c"
 
-// renvoie le XOR de n_bytes octets de flux
+// return XOR of n_bytes bytes of output
 uint64_t GrayCounterMode(int n_bytes){
   v16 Poly[16], Prod[16];
 
@@ -24,7 +24,7 @@ uint64_t GrayCounterMode(int n_bytes){
   }
 
   while(count < n_bytes){
-    //Extraction du flux
+    //get output
     ConvertEvalToCoefficients(Prod, Poly);
     char M[16];
     for(int i =0; i < 16; i++){

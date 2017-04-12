@@ -124,17 +124,17 @@ int revbin8[] = {0, 4, 2, 6, 1, 5, 3, 7};
 int test_fft(int N, int width, i16 omega) {
   i16 A[N*width] __attribute ((aligned (16)));
   i16 B[N*width];
-	// initialise un tableau pseudo-aléatoire
+	// Init a pseudorandom table.
 	for(int i = 0; i < N*width; i++) {
 		A[i] = reduce(5*i ^ 17*i ^ 42);
 	}
 
-	// calcule les [width] FFTs parallèles en O(width * N^2).
+	// compute the [width] FFTs in O(width * N^2).
 	// B[i] = sum(A[j] * (omega^i)^j, i=0..N-1)
 	for(int w=0; w<width; w++) {
-		i16 omega_i = 1; // contient omega^i
+		i16 omega_i = 1; // <-- omega^i
 		for(int i = 0; i < N; i++) {
-			i16 omega_ij = 1; // contient omega^(ij)
+			i16 omega_ij = 1; // <-- omega^(ij)
 			B[w + i * width] = 0;
 			for(int j = 0; j < N; j++) {
 				B[w + i * width] = reduce(B[w + i * width] + A[w + j*width] * omega_ij);
@@ -193,7 +193,7 @@ int test_fft(int N, int width, i16 omega) {
 	return 0;
 }
 
-// Teste le mode compteur pour x = 0x2 et Gray = 3+1 = 4.
+// Test counter mode for x = 0x2 and Gray = 3+1 = 4.
 int test_UpdateGray() {
   uint32_t x = 0;
 
@@ -209,7 +209,7 @@ int test_UpdateGray() {
 }
 
 
-// Teste la fonction reject
+// Test reject function
 int test_reject(v16 a){
   int r, check;
 
@@ -235,11 +235,12 @@ int test_reject(v16 a){
   return 1;
 }
 
+// test rounding function.
 int test_rounding(int n){
   v16 a;
   uint32_t r = 0, r2; 
 
-  //initialise un tableau pseudo-aléatoire
+  //init pseudorandom table.
   for(int i = 0; i < 8; i++){
     a[i] = rand() & 0x00ff;
   }
@@ -287,27 +288,7 @@ int test_BCH(){
   return r == r1;
 }
 
-/* int test_RandomSequence(){ */
-/*   uint32_t a[4], b[4]; */
-  
-/*   for (int i = 0; i <4; i++){ */
-/*     a[i] = rand(); */
-/*     b[i] = a[i]; */
-/*   } */
 
-/*   uint32_t r = RandomSequence(a); */
-
-/*   for(int i = 0; i < 3; i++){ */
-/*     if(a[i+1] != b[i] ){ */
-/*       return 0; */
-/*     } */
-/*   } */
-/*   uint32_t r1 = b[0] * 0xdeadbeef; */
-/*   r1 += b[3]; */
-
-/*   return (r1 == a[0] && r == b[3]); */
-
-/* } */
 
 int main() {
   v16 a = CV(1);

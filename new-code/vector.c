@@ -4,9 +4,6 @@
 //#include "compat.h"
 #include "vector.h"
 
-//#define PRINT_SOME 0
-
-// #define CV(x) { .u16 = {x, x, x, x, x, x, x, x}}
  const union cv V128 = CV(128);
  const union cv V255 = CV(255);
  const union cv V257 = CV(257);

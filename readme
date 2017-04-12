@@ -1,0 +1,23 @@
+SPRING code.
+Part of this code come directly from a code that was given to us by Gaetan Leurent, one of the designer of SPRING-BCH and SPRING-CRT.
+
+Contains:
+
+- In fft_avx2 folder:
+---> bch_ctr.c: SPRING-BCH code (from Gaetan Leurent) using AVX2 instructions.
+---> common.c: set of functions that are common to both SPRING-BCH and SPRING-RS.
+---> fft_bench.c and fft_bench32: timing of the fft.
+---> new_ctr.c: SPRING-CTR code using AVX2 instructions.
+---> test_fft32.c: set of test of various functions and macros.
+---> vector.c: fft function and macros (using 8-coefficient vectors).
+---> vector32.c: fft + rounding and rejection functions (using 16-coefficient vectors).
+---> vector.h: set of macros for vector instructions.
+
+- In spring_neon folder:
+---> common.c: functions that are common to SPRING-BCH and SPRING-RS.
+---> bch.c: SPRING-BCH for ARM-NEON instructions.
+---> fft_bench: timing of the fft and of the BCH code.
+---> rs.c: SPRING_RS for ARM-NEON instructions.
+---> test_fft.c: set of test of various functions and macros.
+---> vector.c: fft functions and macros.
+---> vector.h: set of macros for vector instructions.

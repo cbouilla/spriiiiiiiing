@@ -41,7 +41,7 @@ const sv16 sm1 = {0x00, 0x00, 0xff, 0xff};
 const v16 tm0 = {0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00};
 const v16 tm1 = {0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0, 0x00, 0xc0};
 
-// Coef <--- coefficient du polynome représenté sous forme évalué dans Eval.
+// Get Coefficients from FFT.
 void ConvertEvalToCoefficients(const v16 *Eval, v16 *Coef) {
   for(int i = 0; i < 16; i++){
     Coef[i] = Eval[i];
@@ -65,25 +65,24 @@ int flip = __builtin_ctz(Gray);
   return x;
 }
 
+
 /*
- * Met à jour le "Gray counter" et effectue la multiplication des évaluations.
- * x : la chaine de bits représentant la position du compteur.
- * Gray : le numéro de la valeur du compteur + 1 (déjà mis à jour)
+ * Update the Gray counter and multiply polynomials.
  */
 uint32_t UpdateCounterMode(uint32_t x, v16 *Prod, uint32_t Gray){
   int flip;
   uint32_t mask, inv;
 
-  //index du bit qui doit changer
+  //Index of the flipped bit
   flip = __builtin_ctz(Gray);
 
   mask = (1 << flip);
   x ^= mask;
 
-  // nouvelle valeur du bit qui a changé
+  // New value of the flipped bit
   inv = (x >> flip) & 1;
 
-  // déterminer quel si à utiliser.
+  // Which s_i to use.
 
   const v16 *s = S_Eval[flip][inv];
 
@@ -100,12 +99,8 @@ int reject(v16 a){
   return v16_movemask(mask);
 }
 
-// Sans utiliser NEON
-
-
 /*
- * renvoie le bit de poids fort de chaque coefficient d'un mask
- * la sortie est permutée.
+ * Return MSB of each coefficient of the mask (output is permuted).
  */
 char PermutedMovmask16(v16 a){ 
   v8 b = vnegq_s8(vreinterpretq_s8_s16(a));
@@ -127,74 +122,6 @@ char PermutedMSB(v16 a){
  char  r = PermutedMovmask16(mask);
   return r;
 }
-
-/*
- * Code BCH
- */
-/* uint64_t BCH128to64(uv64 in){ */
-/*   register ui64 b1 = in[0]; */
-/*   register ui64 res = b1; */
-/*   res = ui64_shiftl_xor(res, b1, 2); */
-/*   res = ui64_shiftl_xor(res, b1, 7); */
-/*   res = ui64_shiftl_xor(res, b1, 8); */
-/*   res = ui64_shiftl_xor(res, b1, 10); */
-/*   res = ui64_shiftl_xor(res, b1, 12); */
-/*   res = ui64_shiftl_xor(res, b1, 14); */
-/*   res = ui64_shiftl_xor(res, b1, 15); */
-/*   res = ui64_shiftl_xor(res, b1, 16); */
-/*   res = ui64_shiftl_xor(res, b1, 23); */
-/*   res = ui64_shiftl_xor(res, b1, 25); */
-/*   res = ui64_shiftl_xor(res, b1, 27); */
-/*   res = ui64_shiftl_xor(res, b1, 28); */
-/*   res = ui64_shiftl_xor(res, b1, 30); */
-/*   res = ui64_shiftl_xor(res, b1, 31); */
-/*   res = ui64_shiftl_xor(res, b1, 32); */
-/*   res = ui64_shiftl_xor(res, b1, 33); */
-/*   res = ui64_shiftl_xor(res, b1, 37); */
-/*   res = ui64_shiftl_xor(res, b1, 38); */
-/*   res = ui64_shiftl_xor(res, b1, 39); */
-/*   res = ui64_shiftl_xor(res, b1, 40); */
-/*   res = ui64_shiftl_xor(res, b1, 41); */
-/*   res = ui64_shiftl_xor(res, b1, 42); */
-/*   res = ui64_shiftl_xor(res, b1, 44); */
-/*   res = ui64_shiftl_xor(res, b1, 45); */
-/*   res = ui64_shiftl_xor(res, b1, 48); */
-/*   res = ui64_shiftl_xor(res, b1, 58); */
-/*   res = ui64_shiftl_xor(res, b1, 61); */
-/*   res = ui64_shiftl_xor(res, b1, 63); */
-
-/*   register ui64 b2 = in[1]; */
-/*   res = ui64_shiftr_xor(res, b2, 62); */
-/*   res = ui64_shiftr_xor(res, b2, 57); */
-/*   res = ui64_shiftr_xor(res, b2, 56); */
-/*   res = ui64_shiftr_xor(res, b2, 54); */
-/*   res = ui64_shiftr_xor(res, b2, 52); */
-/*   res = ui64_shiftr_xor(res, b2, 50); */
-/*   res = ui64_shiftr_xor(res, b2, 49); */
-/*   res = ui64_shiftr_xor(res, b2, 48); */
-/*   res = ui64_shiftr_xor(res, b2, 41); */
-/*   res = ui64_shiftr_xor(res, b2, 39); */
-/*   res = ui64_shiftr_xor(res, b2, 37); */
-/*   res = ui64_shiftr_xor(res, b2, 36); */
-/*   res = ui64_shiftr_xor(res, b2, 34); */
-/*   res = ui64_shiftr_xor(res, b2, 33); */
-/*   res = ui64_shiftr_xor(res, b2, 32); */
-/*   res = ui64_shiftr_xor(res, b2, 31); */
-/*   res = ui64_shiftr_xor(res, b2, 27); */
-/*   res = ui64_shiftr_xor(res, b2, 26); */
-/*   res = ui64_shiftr_xor(res, b2, 25); */
-/*   res = ui64_shiftr_xor(res, b2, 24); */
-/*   res = ui64_shiftr_xor(res, b2, 23); */
-/*   res = ui64_shiftr_xor(res, b2, 22); */
-/*   res = ui64_shiftr_xor(res, b2, 20); */
-/*   res = ui64_shiftr_xor(res, b2, 19); */
-/*   res = ui64_shiftr_xor(res, b2, 16); */
-/*   res = ui64_shiftr_xor(res, b2, 6); */
-/*   res = ui64_shiftr_xor(res, b2, 3); */
-/*   res = ui64_shiftr_xor(res, b2, 1); */
-
-/*   return (uint64_t)res ^ ((uint64_t)(-(b2&1))); */
-/* } */
 
 
 uint64_t BCH128to64(uv64 in){
@@ -267,10 +194,10 @@ uint64_t BCH128to64(uv64 in){
 
 
 /*
- * Rouding functions.
+ * Rounding functions.
  */
 
-// On renvoie 4 bits par coefficients (pas de permutations).
+// Return 4 bits per coefficients (no permutation).
 uint32_t rounding4(v16 a) {
   v16 b = v16_and(a, m0);
   v16 c = v16_shift_r(v16_and(a, m1), 4);
@@ -285,7 +212,7 @@ uint32_t rounding4(v16 a) {
   return res;
 }
 
-// on renvoie 4 bits par coefficients (sortie permutée).
+// Return 4 bits per coefficients (permuted output).
 uint32_t prounding4(v16 a){
   v8 b = vreinterpretq_s8_s16(a);
   dsv8 c = vzip_s8(vget_low_s8(b), vget_high_s8(b));
@@ -316,36 +243,8 @@ v16 rand_v16() {
   return REDUCE_FULL(x);
 }
 
-/* uint32_t RandomSequence(uint32_t *X){ */
-/*   uint32_t r; */
 
-/*   r = X[3]; */
-/*   X[3] = X[2]; */
-/*   X[2] = X[1]; */
-/*   X[1] = X[0]; */
-/*   X[0] = X[0] * 0xdeadbeef; */
-/*   X[0] += r; */
-
-/*   return r;   */
-/* } */
-
-/* v16 Randomv16AndUpdateSequence(uint32_t *seed){ */
-/*   v16 x; */
-/*   int16_t x0, x1, a0, a1; */
-/*   for(int i = 0; i < 7; i+=2){ */
-/*     do{ */
-/*       int32_t xx = RandomSequence(seed); */
-/*       x0 = xx; x1 = xx>>16; */
-/*       a0 = x0/256; a1 = x1/256; */
-/*     } while(256*a0 == x0 || 256*a1 == x1); */
-/*     x[i] = x0; */
-/*     x[i+1] = x1; */
-/*   } */
-/*   return REDUCE_FULL(x); */
-/* } */
-
-
-// méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
+//For benchmark. Do not use this for cryptographic purpose.
 void init_secrets() {
   srand(42);
 
@@ -353,7 +252,7 @@ void init_secrets() {
     for(int k=0; k<2; k++){
       for(int j=0; j < 16; j++) {
         S_Eval[i][k][j] = rand_v16();
-        // OK, Sinv n'est pas vraiment l'inverse de S. Et alors ?
+        // OK, Sinv isn't really S inverse. And So ?
       }
     }
   }

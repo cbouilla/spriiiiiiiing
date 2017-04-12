@@ -10,7 +10,7 @@
 
 #include "common.c"
 
-// renvoit le Xor de n_bytes octets de flux.
+// Return XOR of n_bytes bytes of output.
 uint32_t GrayCounterMode(int n_bytes){
   v16 Poly[16], Prod[16];
   uint32_t x=0, Gray_Counter=0;
@@ -46,7 +46,7 @@ int main(){
   begin = clock();
 
 
-  init_secrets();  // TODO remplacer par un LFSR ?
+  init_secrets();  // TODO: replace this by something else (LFSR ?)
 
   begin = clock();
 

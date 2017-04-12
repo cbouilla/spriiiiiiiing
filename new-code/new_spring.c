@@ -36,6 +36,9 @@ const v16 omegaPowers[16] = {
 
 const v16 NULL_VECT = {0, 0, 0, 0, 0, 0, 0, 0};
 const v16 VECT128 = {128, 128, 128, 128, 128, 128, 128, 128};
+const v16 rm2 ={0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0};
+const v16 rm3 ={0xe0, 0xe0, 0xe0, 0xe0, 0xe0, 0xe0, 0xe0, 0xe0};
+const v16 rm4 ={0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
 
 //const v16 VECT_M2BITS ={0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0};
 
@@ -67,9 +70,9 @@ const v16 VECT128 = {128, 128, 128, 128, 128, 128, 128, 128};
 #define arranged_mask(x)  (bits_shift_r(half_bits_w(x), 7)^(weak_bits8(half_bits_w(x))))
 #define ROUNDING1(x)       (arranged_mask(ROUNDING_MASK1(x)))
 
-#define ROUNDING_MASK2(x)  (x&0xc0)
-#define ROUNDING_MASK3(x)  (x&0xe0)
-#define ROUNDING_MASK4(x)  (x&0xf0)
+#define ROUNDING_MASK2(x)  (v16_and(x,rm2))
+#define ROUNDING_MASK3(x)  (v16_and(x,rm2))
+#define ROUNDING_MASK4(x)  (v16_and(x,rm4))
 
 // Rouding in case we return 2 bits :
 unsigned char RoundingWith2Bits(v16 a){
@@ -122,22 +125,21 @@ unsigned char RoundingWith4Bits(v16 a){
   return output;  
 }
 
-// res <--- a * b   (polynômes sous formes évalués)
+// res <--- a * b (FFT version)
 void MultiplyPolyEval128(const v16 a[16], const v16 b[16], v16 res[16]) {
   for (int i=0; i<16; i++){
     res[i] = REDUCE_FULL_S(v16_mul(a[i], b[i]));
   }
 }   
 
-// Coef <--- coefficients du polynôme représenté sous forme évalué dans Eval
+// FFT to get the coefficients of polynomial
 void ConvertEvalToCoefficients(const v16 Eval[16], v16 Coef[16]) {
   for(int i=0; i<16; i++) {
     Coef[i] = Eval[i];
   }
 
   fft128(Coef);
-
-  // indispensable
+  
   v16* CoefPtr = (v16*)Coef;
 
   for(int i=0; i<16; i++){
@@ -147,24 +149,24 @@ void ConvertEvalToCoefficients(const v16 Eval[16], v16 Coef[16]) {
 
 
 /**
- * @param x : la chaine de bits représentant la position actuelle du "gray counter"
- * @param Gray : le numéro de la valeur générée
+ * @param x : actual position of "Gray counter"
+ * @param Gray : index of generated value
  */
 uint64_t UpdateCounterMode(uint64_t x, v16 Prod[16], const uint64_t Gray){
   int flip;
   uint64_t mask, inv;
 
 
-  // index du bit qui doit changer
+  // index of bit that we need to flip
   flip = 1 + __builtin_ctz(Gray);
 
   mask = (1 << (flip));
   x ^= mask;
 
-  // nouvelle valeur du bit qui a changé
+  // new value of flipped bit
   inv = (x >> flip) & 1;
 
-  // jeu de s_i à utiliser
+  // choose which s_i to use
   //const v16 *s = inv ? Sinv_Eval[flip] : S_Eval[flip];
   const v16 *s = S_Eval[flip][inv];
 
@@ -174,7 +176,7 @@ uint64_t UpdateCounterMode(uint64_t x, v16 Prod[16], const uint64_t Gray){
   return x;
 }
 
-// renvoie le XOR de n_bytes octets de flux
+// return XOR of n_bytes bytes of stream 
 unsigned char GrayCounterMode1(int n_bytes, int n_bits){
   v16 Poly[16], Prod[16];
   uint64_t x=0, Gray_counter=0;
@@ -191,7 +193,7 @@ unsigned char GrayCounterMode1(int n_bytes, int n_bits){
   case 1 : 
   while(count < n_bytes) {
 
-    // Extraction du flux
+    // Get stream
     ConvertEvalToCoefficients(Prod, Poly);
     for(int i = 0; i < 16; i++) {
       if (REJECTION_MASK0(Poly[i]) == 0) { //Perform Rejection-sampling.
@@ -207,7 +209,7 @@ unsigned char GrayCounterMode1(int n_bytes, int n_bits){
   case 2 :
     while(count < n_bytes){
     
-    // Extraction du flux
+    // Get stream 
     ConvertEvalToCoefficients(Prod, Poly);
     for(int i = 0; i < 16; i++) {
       v16 x = Poly[i];
@@ -231,7 +233,7 @@ unsigned char GrayCounterMode1(int n_bytes, int n_bits){
   case 3 :
     while(count < n_bytes){
     
-    // Extraction du flux
+    // Get stream
     ConvertEvalToCoefficients(Prod, Poly);
     for(int i = 0; i < 16; i++) {
       v16 x = Poly[i];
@@ -256,7 +258,7 @@ break;
 
 case 4 :
   while(count < n_bytes){
-    // Extraction du flux
+    // Get Stream
     ConvertEvalToCoefficients(Prod, Poly);
     for(int i = 0; i < 16; i++) {
       v16 x = Poly[i];
@@ -297,15 +299,16 @@ v16 rand_v16() {
   return REDUCE_FULL_S(x);
 }
 
-// méthode top-secrète pour initialiser A et les s_i. Ne pas divulguer au public !
+
+//For Benchmark. Do not use this for cryptographic purpose.
 void init_secrets() {
   srand(42);
 
   for(int i=0; i < 64; i++) {
     for(int k=0; k<2; k++){
       for(int j=0; j < 16; j++) {
-        S_Eval[i][k][j] = rand_v16();
-        // Sinv_Eval[i][j] = rand_v16(); // OK, Sinv n'est pas vraiment l'inverse de S. Et alors ?
+        S_Eval[i][k][j] = rand_v16(); // For benchmark. 
+        // Sinv_Eval[i][j] = rand_v16(); // OK, Sinv isn't really S inverse. And so ?
       }
     }
   }

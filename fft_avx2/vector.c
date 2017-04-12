@@ -1,10 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-//#include "compat.h"
 #include "vector.h"
 
-//#define PRINT_SOME 0
 
 // #define CV(x) { .u16 = {x, x, x, x, x, x, x, x}}
  const union cv V128 = CV(128);
